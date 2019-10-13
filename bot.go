@@ -13,14 +13,14 @@ import (
 )
 
 type (
-	enviorment struct {
+	environment struct {
 		Token string `env:"BOT_TOKEN"`
 		Debug bool   `env:"DEBUG" envDefault:"false"`
 	}
 )
 
 var (
-	env = enviorment{}
+	env = environment{}
 	log *logrus.Logger
 )
 
@@ -56,7 +56,17 @@ func main() {
 
 	log.Info("Bot started")
 
-	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+	mux, err := newMux("!", "Unknown command D:")
+	if err != nil {
+		log.WithField("error", err).Fatalf("Unable to create multiplexer")
+	}
+
+	dg.AddHandler(mux.handle)
+
+	mux.register("test", func(ctx *context) {
+		m := ctx.Message
+		s := ctx.Session
+
 		if m.Author.ID == s.State.User.ID {
 			return
 		}
