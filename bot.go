@@ -56,7 +56,7 @@ func main() {
 
 	log.Info("Bot started")
 
-	mux, err := newMux("!", "Unknown command D:")
+	mux, err := newMux("!", "Unknown command D:", log, env.Debug)
 	if err != nil {
 		log.WithField("error", err).Fatalf("Unable to create multiplexer")
 	}
@@ -67,17 +67,7 @@ func main() {
 		m := ctx.Message
 		s := ctx.Session
 
-		if m.Author.ID == s.State.User.ID {
-			return
-		}
-
-		/* Log every message recieved */
-		ch, _ := s.Channel(m.ChannelID)
-		log.WithFields(logrus.Fields{
-			"author":  m.Author.Username,
-			"channel": ch.Name,
-			"message": m.Content,
-		}).Info("Message recieved")
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%+v", ctx.Arguments))
 	})
 
 	err = dg.Open()
