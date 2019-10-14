@@ -10,10 +10,10 @@ import (
 
 type (
 	multiplexer struct {
-		prefix, errorText string
-		commands          map[string]func(ctx *context)
-		logger            *logrus.Logger
-		debug             bool
+		Prefix, ErrorText string
+		Commands          map[string]func(ctx *context)
+		Logger            *logrus.Logger
+		Debug             bool
 	}
 
 	context struct {
@@ -48,55 +48,55 @@ func newMux(
 	}
 
 	return multiplexer{
-		prefix:    prefix,
-		errorText: errorText,
-		commands:  make(map[string]func(ctx *context)),
-		logger:    logger,
-		debug:     debug,
+		Prefix:    prefix,
+		ErrorText: errorText,
+		Commands:  make(map[string]func(ctx *context)),
+		Logger:    logger,
+		Debug:     debug,
 	}, nil
 }
 
 // Handle handles commands. Called directly from dg.AddHandler()
 func (m *multiplexer) handle(
-	ses *discordgo.Session,
-	msg *discordgo.MessageCreate,
+	session *discordgo.Session,
+	message *discordgo.MessageCreate,
 ) {
-	if msg.Author.ID == ses.State.User.ID {
+	if message.Author.ID == session.State.User.ID {
 		return
 	}
 
 	/* TODO: The way arguments are handled here by splitting up slices is
 	probably really inefficent. */
-	args := strings.Split(msg.Message.Content, " ")
-	if args[0][:1] != m.prefix {
+	args := strings.Split(message.Content, " ")
+	if args[0][:1] != m.Prefix {
 		return
 	}
 
-	if m.debug {
-		ch, _ := ses.Channel(msg.ChannelID)
-		gu, _ := ses.Guild(msg.GuildID)
-		m.logger.WithFields(logrus.Fields{
+	if m.Debug {
+		ch, _ := session.Channel(message.ChannelID)
+		gu, _ := session.Guild(message.GuildID)
+		m.Logger.WithFields(logrus.Fields{
 			"messageGuild":   gu.Name,
 			"messageChannel": ch.Name,
-			"messageAuthor":  msg.Author.Username,
-			"messageContent": msg.Content,
+			"messageAuthor":  message.Author.Username,
+			"messageContent": message.Content,
 		}).Info("Message Recieved")
 	}
 
-	handler, ok := m.commands[args[0][1:]]
+	handler, ok := m.Commands[args[0][1:]]
 	if !ok {
-		ses.ChannelMessageSend(msg.ChannelID, m.errorText)
+		session.ChannelMessageSend(message.ChannelID, m.ErrorText)
 		return
 	}
 
 	go handler(&context{
 		Arguments: args[1:],
-		Session:   ses,
-		Message:   msg,
+		Session:   session,
+		Message:   message,
 	})
 }
 
 // Register adds a command to the bot
 func (m *multiplexer) register(command string, handler func(ctx *context)) {
-	m.commands[command] = handler
+	m.Commands[command] = handler
 }
