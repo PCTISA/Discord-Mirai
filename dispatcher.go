@@ -12,6 +12,7 @@ type (
 	multiplexer struct {
 		Prefix, ErrorText string
 		Commands          map[string]func(ctx *context)
+		HelpText 		  map[string]string
 		Logger            *logrus.Logger
 		Debug             bool
 	}
@@ -51,6 +52,7 @@ func newMux(
 		Prefix:    prefix,
 		ErrorText: errorText,
 		Commands:  make(map[string]func(ctx *context)),
+		HelpText:  make(map[string]string),
 		Logger:    logger,
 		Debug:     debug,
 	}, nil
@@ -97,6 +99,36 @@ func (m *multiplexer) handle(
 }
 
 // Register adds a command to the bot
-func (m *multiplexer) register(command string, handler func(ctx *context)) {
+func (m *multiplexer) register(
+	command, helpText string, 
+	handler func(ctx *context), 
+) error {
+	if len(command) == 0 {
+		return fmt.Errorf("Command '%v' too short", command)
+	}
+
+	if len(helpText) == 0 {
+		return fmt.Errorf("Help text '%v' too short", helpText)
+	}
+
 	m.Commands[command] = handler
+	m.HelpText[command] = helpText
+	return nil
+}
+
+// HandleHelp adds a !help command with auto-generated output. Must be called 
+// after all register commands
+func (m *multiplexer) handleHelp(description string) {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("%v\n", description))
+
+	for k, v := range m.HelpText {
+		b.WriteString(fmt.Sprintf("`!%v`: %v\n", k, v))
+	}
+
+	m.register("help", "Lists all commands and their functions.", 
+		func(ctx *context) {
+			ctx.Session.ChannelMessageSend(ctx.Message.ChannelID, b.String())
+		},
+	)
 }

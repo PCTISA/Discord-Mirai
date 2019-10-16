@@ -60,16 +60,18 @@ func main() {
 	if err != nil {
 		log.WithField("error", err).Fatalf("Unable to create multiplexer")
 	}
-
+	
 	dg.AddHandler(mux.handle)
-
-	mux.register("test", func(ctx *context) {
+	
+	mux.register("test", "Tests the bot", func(ctx *context) {
 		m := ctx.Message
 		s := ctx.Session
-
+		
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%+v", ctx.Arguments))
 	})
-
+	
+	mux.handleHelp("Available commands:")
+	
 	err = dg.Open()
 	if err != nil {
 		log.WithField("error", err).Error(
