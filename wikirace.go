@@ -29,18 +29,14 @@ func initWikiRace(ctx *context) {
 	if err != nil {
 		log.Error(err)
 		s.ChannelMessageSend(m.ChannelID, "Hmm... I seem to have run into an issue... Try again later?")
-	}
-
-	defer resp.Body.Close()
-	if err != nil {
-		log.Error(err)
-		s.ChannelMessageSend(m.ChannelID, "Hmm... I seem to have run into an issue... Try again later?")
+		return
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(err)
 		s.ChannelMessageSend(m.ChannelID, "Hmm... I seem to have run into an issue... Try again later?")
+		return
 	}
 
 	var search wikiResult
@@ -48,6 +44,7 @@ func initWikiRace(ctx *context) {
 	if err != nil {
 		log.Error(err)
 		s.ChannelMessageSend(m.ChannelID, "Hmm... I seem to have run into an issue... Try again later?")
+		return
 	}
 
 	articles := search.Query.Random[:2]
