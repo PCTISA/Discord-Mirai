@@ -70,7 +70,7 @@ func main() {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%+v", ctx.Arguments))
 	})
 
-	mux.register("wikirace", "Start a wikirace (eventually...)", initWikiRace)
+	mux.register("wikirace", "Start a wikirace", initWikiRace)
 
 	mux.handleHelp("Available commands:")
 
