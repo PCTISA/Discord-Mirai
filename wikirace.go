@@ -21,10 +21,7 @@ type wikiResult struct {
 	} `json:"query"`
 }
 
-func initWikiRace(ctx *context) {
-	m := ctx.Message
-	s := ctx.Session
-
+func handleWikirace(ctx *context) {
 	/* TODO: Maybe float these erros up to the handler? */
 	resp, err := http.Get("https://en.wikipedia.org/w/api.php?action=query&format=json&list=random&rnnamespace=0&rnlimit=2")
 	if err != nil {
@@ -33,7 +30,7 @@ func initWikiRace(ctx *context) {
 			"command": ctx.Command,
 		}).Error("Unable to get random wikipedia page")
 
-		s.ChannelMessageSend(m.ChannelID, "Hmm... I seem to have run into an issue... Try again later?")
+		ctx.channelSend("Hmm... I seem to have run into an issue... Try again later?")
 		return
 	}
 
@@ -44,7 +41,7 @@ func initWikiRace(ctx *context) {
 			"command": ctx.Command,
 		}).Error("Unable to read page")
 
-		s.ChannelMessageSend(m.ChannelID, "Hmm... I seem to have run into an issue... Try again later?")
+		ctx.channelSend("Hmm... I seem to have run into an issue... Try again later?")
 		return
 	}
 
@@ -56,7 +53,7 @@ func initWikiRace(ctx *context) {
 			"command": ctx.Command,
 		}).Error("Unable to unmarshal page")
 
-		s.ChannelMessageSend(m.ChannelID, "Hmm... I seem to have run into an issue... Try again later?")
+		ctx.channelSend("Hmm... I seem to have run into an issue... Try again later?")
 		return
 	}
 
@@ -67,5 +64,5 @@ func initWikiRace(ctx *context) {
 	// <> characters prevent the embed
 	msg := "Race starts at " + articles[0].Title + " (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[0].ID) + ">)" + " and goes to " + articles[1].Title + " (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[1].ID) + ">)" + "."
 
-	s.ChannelMessageSend(m.ChannelID, msg)
+	ctx.channelSend(msg)
 }

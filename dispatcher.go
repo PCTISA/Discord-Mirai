@@ -12,7 +12,7 @@ type (
 	multiplexer struct {
 		Prefix, ErrorText string
 		Commands          map[string]func(ctx *context)
-		HelpText 		  map[string]string
+		HelpText          map[string]string
 		Logger            *logrus.Logger
 		Debug             bool
 	}
@@ -102,8 +102,8 @@ func (m *multiplexer) handle(
 
 // Register adds a command to the bot
 func (m *multiplexer) register(
-	command, helpText string, 
-	handler func(ctx *context), 
+	command, helpText string,
+	handler func(ctx *context),
 ) error {
 	if len(command) == 0 {
 		return fmt.Errorf("Command '%v' too short", command)
@@ -118,7 +118,7 @@ func (m *multiplexer) register(
 	return nil
 }
 
-// HandleHelp adds a !help command with auto-generated output. Must be called 
+// HandleHelp adds a !help command with auto-generated output. Must be called
 // after all register commands
 func (m *multiplexer) handleHelp(description string) {
 	var b strings.Builder
@@ -128,9 +128,15 @@ func (m *multiplexer) handleHelp(description string) {
 		b.WriteString(fmt.Sprintf("`!%v`: %v\n", k, v))
 	}
 
-	m.register("help", "Lists all commands and their functions.", 
+	m.register("help", "Lists all commands and their functions.",
 		func(ctx *context) {
-			ctx.Session.ChannelMessageSend(ctx.Message.ChannelID, b.String())
+			ctx.channelSend(b.String())
 		},
 	)
+}
+
+// channelSend enables easier sending of messages to the channel the command
+// was recieved on.
+func (c *context) channelSend(message string) {
+	c.Session.ChannelMessageSend(c.Message.ChannelID, message)
 }
