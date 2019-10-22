@@ -18,6 +18,7 @@ type (
 	}
 
 	context struct {
+		Command   string
 		Arguments []string
 		Session   *discordgo.Session
 		Message   *discordgo.MessageCreate
@@ -92,6 +93,7 @@ func (m *multiplexer) handle(
 	}
 
 	go handler(&context{
+		Command:   args[0][1:],
 		Arguments: args[1:],
 		Session:   session,
 		Message:   message,
