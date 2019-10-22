@@ -14,8 +14,9 @@ import (
 
 type (
 	environment struct {
-		Token string `env:"BOT_TOKEN"`
-		Debug bool   `env:"DEBUG" envDefault:"false"`
+		Token   string `env:"BOT_TOKEN"`
+		Debug   bool   `env:"DEBUG" envDefault:"false"`
+		DataDir string `env:"DATA_DIR" envDefault:"data/"`
 	}
 )
 
@@ -64,13 +65,10 @@ func main() {
 	dg.AddHandler(mux.handle)
 
 	mux.register("test", "Tests the bot", func(ctx *context) {
-		m := ctx.Message
-		s := ctx.Session
-
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%+v", ctx.Arguments))
+		ctx.channelSend(fmt.Sprintf("%+v", ctx.Arguments))
 	})
 
-	mux.register("wikirace", "Start a wikirace", initWikiRace)
+	mux.register("wikirace", "Start a wikirace", handleWikirace)
 
 	mux.handleHelp("Available commands:")
 
