@@ -27,7 +27,7 @@ pipeline {
     stage("Push Image") {
       steps {
         script {
-          docker.withRegistry("", registryCredential) {
+          docker.withRegistry("https://docker.pkg.github.com", registryCredential) {
             outputImage.push("latest")
             outputImage.push("$VERSION-$BUILD_NUMBER")
           }
