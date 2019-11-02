@@ -23,6 +23,12 @@ type (
 var (
 	env = environment{}
 	log *logrus.Logger
+
+	// TODO: This needs help
+	// Maybe fetch from server to populate on startup?
+	channelMap = map[string]string{
+		"BotTesting": "595357990920388637",
+	}
 )
 
 func init() {
@@ -69,6 +75,10 @@ func main() {
 	})
 
 	mux.register("wikirace", "Start a wikirace", handleWikirace)
+
+	mux.register("give", "Get access to a role, and all related channels", handleRequest)
+
+	mux.register("take", "Takes away a role, and removes access to all related channels", handleTake)
 
 	mux.handleHelp("Available commands:")
 
