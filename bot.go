@@ -28,6 +28,7 @@ var (
 	// Maybe fetch from server to populate on startup?
 	channelMap = map[string]string{
 		"BotTesting": "595357990920388637",
+		"BotSpam":    "599934636554190861",
 	}
 )
 
