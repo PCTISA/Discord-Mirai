@@ -7,11 +7,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func findRoleByIndex(ctx *context) (string, error) {
+	roleIndex, err := strconv.Atoi(ctx.Arguments[0])
+	if err != nil {
+		ctx.channelSend("Sorry, I don't understand which role you want :(")
+		return "", err
+	}
+
+	roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error":   err,
+			"command": ctx.Command,
+		}).Error("Something went wrong when reading role")
+	}
+
+	roleID := roles[roleIndex-1].ID
+
+	return roleID, nil
+}
+
 func handleRequest(ctx *context) {
 	if len(ctx.Arguments) == 0 {
-		var roles = []string{
-			"tester",
-			"anotherTester",
+		roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error":   err,
+				"command": ctx.Command,
+			}).Error("Something went wrong when reading role")
 		}
 
 		var msg strings.Builder
@@ -19,7 +42,7 @@ func handleRequest(ctx *context) {
 		msg.WriteString("Available roles are: ")
 
 		for i := 0; i < len(roles); i++ {
-			msg.WriteString("\n`" + strconv.Itoa(i+1) + ": " + roles[i] + "`")
+			msg.WriteString("\n- `" + strconv.Itoa(i+1) + ": " + roles[i].Name + "`")
 		}
 
 		ctx.channelSend(msg.String())
@@ -29,9 +52,15 @@ func handleRequest(ctx *context) {
 	if ctx.Message.ChannelID == channelMap["BotTesting"] {
 		userID := ctx.Message.Author.ID
 		guildID := ctx.Message.GuildID
-		roleID := "640291240834760726"
 
-		// Hardcoded Siege role id
+		roleID, err := findRoleByIndex(ctx)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error":   err,
+				"command": ctx.Command,
+			}).Error("Unable to find desired role. Was it deleted?")
+		}
+
 		ctx.Session.GuildMemberRoleAdd(guildID, userID, roleID)
 		role, err := ctx.Session.State.Role(guildID, roleID)
 		if err != nil {
@@ -55,7 +84,14 @@ func handleTake(ctx *context) {
 	if ctx.Message.ChannelID == channelMap["BotTesting"] {
 		userID := ctx.Message.Author.ID
 		guildID := ctx.Message.GuildID
-		roleID := "640291240834760726"
+
+		roleID, err := findRoleByIndex(ctx)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error":   err,
+				"command": ctx.Command,
+			}).Error("Unable to find desired role. Was it deleted?")
+		}
 
 		ctx.Session.GuildMemberRoleRemove(guildID, userID, roleID)
 		role, err := ctx.Session.State.Role(guildID, roleID)
