@@ -8,7 +8,7 @@ import (
 )
 
 func findRoleByIndex(ctx *context) (string, error) {
-	roleIndex, err := strconv.Atoi(ctx.Arguments[0])
+	roleIndex, err := strconv.Atoi(ctx.Arguments[1])
 	if err != nil {
 		ctx.channelSend("Sorry, I don't understand which role you want :(")
 		return "", err
@@ -31,7 +31,7 @@ func isValidChannel(ctx *context) bool {
 	return ctx.Message.ChannelID == channelMap["BotTesting"] || ctx.Message.ChannelID == channelMap["BotSpam"]
 }
 
-func handleRequest(ctx *context) {
+func handleGatekeeper(ctx *context) {
 	if len(ctx.Arguments) == 0 {
 		roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
 		if err != nil {
@@ -53,6 +53,28 @@ func handleRequest(ctx *context) {
 		return
 	}
 
+	if len(ctx.Arguments) == 1 {
+		var msg strings.Builder
+
+		// This needs some help...
+		msg.WriteString("Available options are `give` and `take`")
+
+		ctx.channelSend(msg.String())
+		return
+	}
+
+	if ctx.Arguments[0] == "give" {
+		handleRequest(ctx)
+		return
+	} else if ctx.Arguments[0] == "take" {
+		handleTake(ctx)
+		return
+	} else {
+		ctx.channelSend("Unknown command :/ Maybe try `give` or `take`?")
+	}
+}
+
+func handleRequest(ctx *context) {
 	if isValidChannel(ctx) {
 		userID := ctx.Message.Author.ID
 		guildID := ctx.Message.GuildID
