@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type articleInfo struct {
@@ -49,9 +50,15 @@ func initWikiRace(ctx *context) {
 
 	articles := search.Query.Random[:2]
 
-	// @carson is there a better way of doing this?
-	// <> characters prevent the embed
-	msg := "Race starts at " + articles[0].Title + " (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[0].ID) + ">)" + " and goes to " + articles[1].Title + " (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[1].ID) + ">)" + "."
+	var msgBuilder strings.Builder
 
-	s.ChannelMessageSend(m.ChannelID, msg)
+	msgBuilder.WriteString("Race starts at ")
+	msgBuilder.WriteString(articles[0].Title)
+	// <> characters prevent embed
+	msgBuilder.WriteString(" (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[0].ID) + ">)")
+	msgBuilder.WriteString(" and goes to ")
+	msgBuilder.WriteString(articles[1].Title + " (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[1].ID) + ">)")
+	msgBuilder.WriteString(".")
+
+	s.ChannelMessageSend(m.ChannelID, msgBuilder.String())
 }
