@@ -27,6 +27,10 @@ func findRoleByIndex(ctx *context) (string, error) {
 	return roleID, nil
 }
 
+func isValidChannel(ctx *context) bool {
+	return ctx.Message.ChannelID == channelMap["BotTesting"] || ctx.Message.ChannelID == channelMap["BotSpam"]
+}
+
 func handleRequest(ctx *context) {
 	if len(ctx.Arguments) == 0 {
 		roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
@@ -49,7 +53,7 @@ func handleRequest(ctx *context) {
 		return
 	}
 
-	if ctx.Message.ChannelID == channelMap["BotTesting"] {
+	if isValidChannel(ctx) {
 		userID := ctx.Message.Author.ID
 		guildID := ctx.Message.GuildID
 
@@ -81,7 +85,7 @@ func handleRequest(ctx *context) {
 }
 
 func handleTake(ctx *context) {
-	if ctx.Message.ChannelID == channelMap["BotTesting"] {
+	if isValidChannel(ctx) {
 		userID := ctx.Message.Author.ID
 		guildID := ctx.Message.GuildID
 
