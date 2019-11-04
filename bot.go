@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -21,15 +22,9 @@ type (
 )
 
 var (
-	env = environment{}
-	log *logrus.Logger
-
-	// TODO: This needs help
-	// Maybe fetch from server to populate on startup?
-	channelMap = map[string]string{
-		"BotTesting": "595357990920388637",
-		"BotSpam":    "599934636554190861",
-	}
+	env    = environment{}
+	log    *logrus.Logger
+	config *botConfig
 )
 
 func init() {
@@ -41,17 +36,12 @@ func init() {
 	fmt.Printf("%+v\n", env)
 
 	/* Define logging setup */
-	logrus.SetOutput(os.Stdout)
-	log = logrus.New()
+	log = initLogging(env.Debug)
 
-	logrus.SetLevel(logrus.DebugLevel)
-	log.SetFormatter(&logrus.TextFormatter{
-		ForceColors: true,
-	})
-
-	if !env.Debug {
-		logrus.SetLevel(logrus.InfoLevel)
-		log.SetFormatter(&logrus.JSONFormatter{})
+	var err error
+	config, err = getConfig(env.DataDir + "config.json")
+	if err != nil {
+		log.WithField("error", err).Error("Problem executing config command")
 	}
 }
 
@@ -73,6 +63,15 @@ func main() {
 
 	mux.register("test", "Tests the bot", func(ctx *context) {
 		ctx.channelSend(fmt.Sprintf("%+v", ctx.Arguments))
+	})
+
+	mux.register("config", "Display the bot's configuration", func(ctx *context) {
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("`Requestable Roles: %+v`\n", config.requestableRoles))
+		sb.WriteString(fmt.Sprintf("`Simple Commands: %+v`\n", config.simpleCommands))
+		sb.WriteString(fmt.Sprintf("`Permissions: %+v`", config.permissions))
+
+		ctx.channelSend(sb.String())
 	})
 
 	mux.register("wikirace", "Start a wikirace", handleWikirace)
