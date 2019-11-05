@@ -54,6 +54,9 @@ func main() {
 
 	log.Info("Bot started")
 
+	/* TODO: We're passing log to the multiplexer which is kinda unnecessary.
+	   While we're on this pointless train of thought, might as well pass it
+	   as the context as well */
 	mux, err := newMux("!", "Unknown command D:", log, env.Debug)
 	if err != nil {
 		log.WithField("error", err).Fatalf("Unable to create multiplexer")

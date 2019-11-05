@@ -1,139 +1,134 @@
 package main
 
 import (
-	"strconv"
+	"errors"
+	"fmt"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
-func findRoleByIndex(ctx *context) (string, error) {
-	roleIndex, err := strconv.Atoi(ctx.Arguments[1])
+const (
+	unknownCommand = "Unknown command. Usage: `!role [give|take] [Role Name]`"
+	backendError   = "Backend error: `%q`"
+)
+
+func idToName(ctx *context, id *string) (string, error) {
+	role, err := ctx.Session.State.Role(ctx.Message.GuildID, *id)
 	if err != nil {
-		ctx.channelSend("Sorry, I don't understand which role you want :(")
 		return "", err
 	}
-
-	roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
-	if err != nil {
-		log.WithFields(logrus.Fields{
-			"error":   err,
-			"command": ctx.Command,
-		}).Error("Something went wrong when reading role")
-	}
-
-	roleID := roles[roleIndex-1].ID
-
-	return roleID, nil
+	return role.Name, nil
 }
 
-func isValidChannel(ctx *context) bool {
-	return ctx.Message.ChannelID == channelMap["BotTesting"] || ctx.Message.ChannelID == channelMap["BotSpam"]
+func nameToID(ctx *context, name *string) (string, error) {
+	roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
+	if err != nil {
+		return "", errors.New("Unable to fetch roles for this guild")
+	}
+
+	for _, r := range roles {
+		if strings.ToLower(r.Name) == *name {
+			return r.ID, nil
+		}
+	}
+	return "", fmt.Errorf("Role name %s does not exist", *name)
+}
+
+/* TODO: Maybe move this to util if we need such functionality elsewhere? */
+func arrayContains(array []string, value string) bool {
+	for _, e := range array {
+		if e == value {
+			return true
+		}
+	}
+	return false
 }
 
 func handleGatekeeper(ctx *context) {
-	if len(ctx.Arguments) == 0 {
-		roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
+	/* Get role IDs and names */
+	roleIDs := config.requestableRoles
+	roleNames := []string{}
+	for _, id := range roleIDs {
+		name, err := idToName(ctx, &id)
 		if err != nil {
-			log.WithFields(logrus.Fields{
-				"error":   err,
-				"command": ctx.Command,
-			}).Error("Something went wrong when reading role")
+			log.WithField("error", err).Errorf(
+				"Problem converting ID: %q to name", id,
+			)
+			ctx.channelSend("There was a problem executing the command")
+			return
 		}
+		roleNames = append(roleNames, strings.ToLower(name))
+	}
+
+	/* If there are no arguments (Give/Take). Provide the user with options */
+	if len(ctx.Arguments) == 0 {
 
 		var msg strings.Builder
-
 		msg.WriteString("Available roles are: ")
 
-		for i := 0; i < len(roles); i++ {
-			msg.WriteString("\n- `" + strconv.Itoa(i+1) + ": " + roles[i].Name + "`")
+		for _, n := range roleNames {
+			msg.WriteString(fmt.Sprintf("\n- `%s`", n))
 		}
 
 		ctx.channelSend(msg.String())
 		return
 	}
 
-	if len(ctx.Arguments) == 1 {
-		var msg strings.Builder
-
-		// This needs some help...
-		msg.WriteString("Available options are `give` and `take`")
-
-		ctx.channelSend(msg.String())
+	/* If there was an argument, was it give, take, or something invalid? */
+	var give bool
+	switch strings.ToLower(ctx.Arguments[0]) {
+	case "give":
+		give = true
+	case "take":
+		give = false
+	default:
+		ctx.channelSend(unknownCommand)
 		return
 	}
 
-	if ctx.Arguments[0] == "give" {
-		handleRequest(ctx)
+	/* If there was just one argument, inform the user */
+	if len(ctx.Arguments) < 2 {
+		ctx.channelSend(unknownCommand)
 		return
-	} else if ctx.Arguments[0] == "take" {
-		handleTake(ctx)
-		return
-	} else {
-		ctx.channelSend("Unknown command :/ Maybe try `give` or `take`?")
 	}
-}
 
-func handleRequest(ctx *context) {
-	if isValidChannel(ctx) {
-		userID := ctx.Message.Author.ID
-		guildID := ctx.Message.GuildID
+	/* Get the user ID and the user object */
+	userID := ctx.Message.Author.ID
+	user, err := ctx.Session.User(userID)
+	if err != nil {
+		ctx.channelSend(fmt.Sprintf(backendError, err))
+	}
 
-		roleID, err := findRoleByIndex(ctx)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"error":   err,
-				"command": ctx.Command,
-			}).Error("Unable to find desired role. Was it deleted?")
-		}
+	/* Check to see if the requested role is valid */
+	req := strings.ToLower(ctx.Arguments[1])
 
+	if !arrayContains(
+		roleNames, req,
+	) {
+		ctx.channelSend(
+			fmt.Sprintf("Unable to give/take role %s, %s", req, user.Mention()),
+		)
+		return
+	}
+
+	/* Get the guild and role IDs */
+	guildID := ctx.Message.GuildID
+	roleID, err := nameToID(ctx, &req)
+	if err != nil {
+		ctx.channelSend(fmt.Sprintf(backendError, err))
+		return
+	}
+
+	/* Give a role */
+	if give {
 		ctx.Session.GuildMemberRoleAdd(guildID, userID, roleID)
-		role, err := ctx.Session.State.Role(guildID, roleID)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"error":   err,
-				"command": ctx.Command,
-			}).Error("Something went wrong when reading role")
-		}
+		ctx.channelSend(
+			fmt.Sprintf("You have been given role %s, %s", req, user.Mention()),
+		)
 
-		var msg strings.Builder
-
-		msg.WriteString("You have been granted the role of ")
-		msg.WriteString(role.Name)
-		msg.WriteString(". I trust that you can wield your newfound powers wisely")
-
-		ctx.channelSend(msg.String())
+		return
 	}
-}
 
-func handleTake(ctx *context) {
-	if isValidChannel(ctx) {
-		userID := ctx.Message.Author.ID
-		guildID := ctx.Message.GuildID
-
-		roleID, err := findRoleByIndex(ctx)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"error":   err,
-				"command": ctx.Command,
-			}).Error("Unable to find desired role. Was it deleted?")
-		}
-
-		ctx.Session.GuildMemberRoleRemove(guildID, userID, roleID)
-		role, err := ctx.Session.State.Role(guildID, roleID)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"error":   err,
-				"command": ctx.Command,
-			}).Error("Something went wrong when reading role")
-		}
-
-		var msg strings.Builder
-
-		// User @mention here?
-		msg.WriteString("Alas, all good things must come to an end. You no longer have the role ")
-		msg.WriteString(role.Name)
-
-		ctx.channelSend(msg.String())
-	}
+	/* Take a role */
+	ctx.Session.GuildMemberRoleRemove(guildID, userID, roleID)
+	ctx.channelSend(fmt.Sprintf("Taking role %s away, %s", req, user.Mention()))
 }
