@@ -33,11 +33,10 @@ func init() {
 		fmt.Printf("%+v\n", err)
 	}
 
-	fmt.Printf("%+v\n", env)
-
 	/* Define logging setup */
 	log = initLogging(env.Debug)
 
+	/* Parse config */
 	var err error
 	config, err = getConfig(env.DataDir + "config.json")
 	if err != nil {
@@ -46,20 +45,21 @@ func init() {
 }
 
 func main() {
+	/* Initialize DiscordGo */
 	log.Info("Starting Bot...")
 	dg, err := discordgo.New("Bot " + env.Token)
 	if err != nil {
 		log.WithField("error", err).Error("Problem starting bot")
 	}
-
 	log.Info("Bot started")
 
+	/* Initialize mux */
 	mux, err := newMux("!", "Unknown command D:", log, env.Debug)
 	if err != nil {
 		log.WithField("error", err).Fatalf("Unable to create multiplexer")
 	}
 
-	dg.AddHandler(mux.handle)
+	/* --- Register all the things --- */
 
 	mux.register("test", "Tests the bot", func(ctx *context) {
 		ctx.channelSend(fmt.Sprintf("%+v", ctx.Arguments))
@@ -78,6 +78,10 @@ func main() {
 
 	mux.handleHelp("Available commands:")
 
+	/* --- End Register --- */
+
+	/* Handle commands and start DiscordGo */
+	dg.AddHandler(mux.handle)
 	err = dg.Open()
 	if err != nil {
 		log.WithField("error", err).Error(
