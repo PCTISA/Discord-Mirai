@@ -36,22 +36,19 @@ func newMux(
 			fmt.Errorf("prefix %q longer than max length of 1", prefix)
 	}
 
-	/* TODO: Make errorText optional..
-	Would have to check for it's existance elsewhere */
+	et := errorText
 	if len(errorText) == 0 {
-		return multiplexer{}, fmt.Errorf("error text %q nonexistant", errorText)
+		et = "Command not found."
 	}
 
 	if logger == nil {
 		return multiplexer{},
-			/* Technically not a use for Errorf,
-			but better than importing errors */
 			fmt.Errorf("logger invalid")
 	}
 
 	return multiplexer{
 		Prefix:    prefix,
-		ErrorText: errorText,
+		ErrorText: et,
 		Commands:  make(map[string]func(ctx *context)),
 		HelpText:  make(map[string]string),
 		Logger:    logger,
@@ -64,17 +61,18 @@ func (m *multiplexer) handle(
 	session *discordgo.Session,
 	message *discordgo.MessageCreate,
 ) {
+	/* Ignore if the message being handled originated from the bot */
 	if message.Author.ID == session.State.User.ID {
 		return
 	}
 
-	/* TODO: The way arguments are handled here by splitting up slices is
-	probably really inefficent. */
+	/* Split the message on the space */
 	args := strings.Split(message.Content, " ")
 	if args[0][:1] != m.Prefix {
 		return
 	}
 
+	/* If debugging is enabled, log the message */
 	if m.Debug {
 		ch, _ := session.Channel(message.ChannelID)
 		gu, _ := session.Guild(message.GuildID)
@@ -86,18 +84,54 @@ func (m *multiplexer) handle(
 		}).Info("Message Recieved")
 	}
 
+	/* Retrieve the handler from the list (if present) */
 	handler, ok := m.Commands[args[0][1:]]
 	if !ok {
 		session.ChannelMessageSend(message.ChannelID, m.ErrorText)
 		return
 	}
 
-	go handler(&context{
-		Command:   args[0][1:],
-		Arguments: args[1:],
-		Session:   session,
-		Message:   message,
-	})
+	/* Check if command was listed as requireing a special role */
+	roles, ok := config.permissions[args[0][1:]]
+	if !ok {
+		/* If it doesn't, just handle it */
+		go handler(&context{
+			Command:   args[0][1:],
+			Arguments: args[1:],
+			Session:   session,
+			Message:   message,
+		})
+		return
+	}
+
+	/* If it does, check if the user has the correct permissions */
+	member, err := session.GuildMember(message.GuildID, message.Author.ID)
+	if err != nil {
+		session.ChannelMessageSend(
+			message.ChannelID,
+			"This should never happen, if you see this: Run.",
+		)
+		return
+	}
+
+	/* Iterate through the roles required for the command and compare */
+	for _, r := range roles {
+		if arrayContains(member.Roles, r) {
+			go handler(&context{
+				Command:   args[0][1:],
+				Arguments: args[1:],
+				Session:   session,
+				Message:   message,
+			})
+			return
+		}
+	}
+
+	/* Looks like you don't have permission */
+	session.ChannelMessageSend(
+		message.ChannelID,
+		"You don't have permission to execute that command.",
+	)
 }
 
 // Register adds a command to the bot
@@ -135,8 +169,18 @@ func (m *multiplexer) handleHelp(description string) {
 	)
 }
 
-// channelSend enables easier sending of messages to the channel the command
+// ChannelSend enables easier sending of messages to the channel the command
 // was recieved on.
 func (c *context) channelSend(message string) {
 	c.Session.ChannelMessageSend(c.Message.ChannelID, message)
+}
+
+/* TODO: Maybe move this to util if we need such functionality elsewhere? */
+func arrayContains(array []string, value string) bool {
+	for _, e := range array {
+		if e == value {
+			return true
+		}
+	}
+	return false
 }
