@@ -105,7 +105,7 @@ func handleGatekeeper(ctx *context) {
 		roleNames, req,
 	) {
 		ctx.channelSend(
-			fmt.Sprintf("Unable to give/take role %s, %s", req, user.Mention()),
+			fmt.Sprintf("Unable to find role `%s`", req),
 		)
 		return
 	}
