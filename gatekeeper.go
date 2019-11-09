@@ -33,16 +33,6 @@ func nameToID(ctx *context, name *string) (string, error) {
 	return "", fmt.Errorf("Role name %s does not exist", *name)
 }
 
-/* TODO: Maybe move this to util if we need such functionality elsewhere? */
-func arrayContains(array []string, value string) bool {
-	for _, e := range array {
-		if e == value {
-			return true
-		}
-	}
-	return false
-}
-
 func handleGatekeeper(ctx *context) {
 	/* Get role IDs and names */
 	roleIDs := config.requestableRoles
