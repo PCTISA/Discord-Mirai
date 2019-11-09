@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
-	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type articleInfo struct {
@@ -50,15 +51,32 @@ func initWikiRace(ctx *context) {
 
 	articles := search.Query.Random[:2]
 
-	var msgBuilder strings.Builder
-
-	msgBuilder.WriteString("Race starts at ")
-	msgBuilder.WriteString(articles[0].Title)
-	// <> characters prevent embed
-	msgBuilder.WriteString(" (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[0].ID) + ">)")
-	msgBuilder.WriteString(" and goes to ")
-	msgBuilder.WriteString(articles[1].Title + " (<https://en.wikipedia.org/?curid=" + strconv.Itoa(articles[1].ID) + ">)")
-	msgBuilder.WriteString(".")
-
-	s.ChannelMessageSend(m.ChannelID, msgBuilder.String())
+	ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID, &discordgo.MessageEmbed{
+		Title:       "Wikipedia Race",
+		Author:      &discordgo.MessageEmbedAuthor{},
+		Color:       0x0080ff,
+		Description: "Start at the start and use only blue links in the article to get to the end page!",
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name: "Start:vertical_traffic_light:",
+				Value: fmt.Sprintf(
+					"[%s](%s%d)",
+					articles[0].Title,
+					"https://en.wikipedia.org/?curid=",
+					articles[0].ID,
+				),
+				Inline: false,
+			},
+			&discordgo.MessageEmbedField{
+				Name: "End :checkered_flag:",
+				Value: fmt.Sprintf(
+					"[%s](%s%d)",
+					articles[1].Title,
+					"https://en.wikipedia.org/?curid=",
+					articles[1].ID,
+				),
+				Inline: false,
+			},
+		},
+	})
 }
