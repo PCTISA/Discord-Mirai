@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/sirupsen/logrus"
 )
 
@@ -85,18 +86,33 @@ func (m *multiplexer) handle(
 	}
 
 	/* Retrieve the handler from the list (if present) */
-	handler, ok := m.Commands[args[0][1:]]
+	command := args[0][1:]
+	handler, ok := m.Commands[command]
 	if !ok {
-		session.ChannelMessageSend(message.ChannelID, m.ErrorText)
+		var (
+			sb strings.Builder
+			cl []string
+		)
+
+		for k := range m.Commands {
+			cl = append(cl, k)
+		}
+
+		sb.WriteString("Command not found. Did you mean:")
+		for _, v := range fuzzy.Find(command, cl) {
+			sb.WriteString(fmt.Sprintf("\n- `%s`", v))
+		}
+
+		session.ChannelMessageSend(message.ChannelID, sb.String())
 		return
 	}
 
 	/* Check if command was listed as requireing a special role */
-	roles, ok := config.permissions[args[0][1:]]
+	roles, ok := config.permissions[command]
 	if !ok {
 		/* If it doesn't, just handle it */
 		go handler(&context{
-			Command:   args[0][1:],
+			Command:   command,
 			Arguments: args[1:],
 			Session:   session,
 			Message:   message,
@@ -118,7 +134,7 @@ func (m *multiplexer) handle(
 	for _, r := range roles {
 		if arrayContains(member.Roles, r) {
 			go handler(&context{
-				Command:   args[0][1:],
+				Command:   command,
 				Arguments: args[1:],
 				Session:   session,
 				Message:   message,
@@ -158,13 +174,27 @@ func (m *multiplexer) handleHelp(description string) {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("%v\n", description))
 
+	var fields []*discordgo.MessageEmbedField
 	for k, v := range m.HelpText {
-		b.WriteString(fmt.Sprintf("`!%v`: %v\n", k, v))
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "!" + k,
+			Value:  v,
+			Inline: true,
+		})
+
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       ":regional_indicator_h::regional_indicator_e::regional_indicator_l::regional_indicator_p:",
+		Author:      &discordgo.MessageEmbedAuthor{},
+		Color:       0xfdd329,
+		Description: description,
+		Fields:      fields,
 	}
 
 	m.register("help", "Lists all commands and their functions.",
 		func(ctx *context) {
-			ctx.channelSend(b.String())
+			ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID, embed)
 		},
 	)
 }

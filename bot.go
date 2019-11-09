@@ -65,7 +65,7 @@ func main() {
 		ctx.channelSend(fmt.Sprintf("%+v", ctx.Arguments))
 	})
 
-	mux.register("config", "Display the bot's configuration", func(ctx *context) {
+	mux.register("config", "Display the bot's config", func(ctx *context) {
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("`Requestable Roles: %+v`\n", config.requestableRoles))
 		sb.WriteString(fmt.Sprintf("`Simple Commands: %+v`\n", config.simpleCommands))
