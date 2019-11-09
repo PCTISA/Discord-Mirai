@@ -7,9 +7,6 @@ import (
 	"net/http"
 
 	"github.com/bwmarrin/discordgo"
-	"strconv"
-	"strings"
-
 	"github.com/sirupsen/logrus"
 )
 
