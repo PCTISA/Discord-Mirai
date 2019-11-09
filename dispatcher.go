@@ -171,30 +171,30 @@ func (m *multiplexer) register(
 // HandleHelp adds a !help command with auto-generated output. Must be called
 // after all register commands
 func (m *multiplexer) handleHelp(description string) {
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%v\n", description))
-
 	var fields []*discordgo.MessageEmbedField
 	for k, v := range m.HelpText {
+		// If there is no description for the command, omit it from help
+		if len(v) == 0 {
+			continue
+		}
+
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name:   "!" + k,
 			Value:  v,
 			Inline: true,
 		})
-
-	}
-
-	embed := &discordgo.MessageEmbed{
-		Title:       ":regional_indicator_h::regional_indicator_e::regional_indicator_l::regional_indicator_p:",
-		Author:      &discordgo.MessageEmbedAuthor{},
-		Color:       0xfdd329,
-		Description: description,
-		Fields:      fields,
 	}
 
 	m.register("help", "Lists all commands and their functions.",
 		func(ctx *context) {
-			ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID, embed)
+			ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
+				&discordgo.MessageEmbed{
+					Title:       ":regional_indicator_h::regional_indicator_e::regional_indicator_l::regional_indicator_p:",
+					Author:      &discordgo.MessageEmbedAuthor{},
+					Color:       0xfdd329,
+					Description: description,
+					Fields:      fields,
+				})
 		},
 	)
 }
