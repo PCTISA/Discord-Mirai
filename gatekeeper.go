@@ -30,7 +30,7 @@ func nameToID(ctx *context, name *string) (string, error) {
 			return r.ID, nil
 		}
 	}
-	return "", fmt.Errorf("Role name %s does not exist", *name)
+	return "", fmt.Errorf("Role name `%s` does not exist", *name)
 }
 
 func handleGatekeeper(ctx *context) {
@@ -41,7 +41,7 @@ func handleGatekeeper(ctx *context) {
 		name, err := idToName(ctx, &id)
 		if err != nil {
 			log.WithField("error", err).Errorf(
-				"Problem converting ID: %q to name", id,
+				"Problem converting ID: `%v` to name", id,
 			)
 			ctx.channelSend("There was a problem executing the command")
 			return
@@ -66,9 +66,9 @@ func handleGatekeeper(ctx *context) {
 	/* If there was an argument, was it give, take, or something invalid? */
 	var give bool
 	switch strings.ToLower(ctx.Arguments[0]) {
-	case "give":
+	case "give", "g":
 		give = true
-	case "take":
+	case "take", "t":
 		give = false
 	default:
 		ctx.channelSend(unknownCommand)
@@ -83,7 +83,7 @@ func handleGatekeeper(ctx *context) {
 
 	/* Get the user ID and the user object */
 	userID := ctx.Message.Author.ID
-	user, err := ctx.Session.User(userID)
+	member, err := ctx.Session.GuildMember(ctx.Message.GuildID, userID)
 	if err != nil {
 		ctx.channelSend(fmt.Sprintf(backendError, err))
 	}
@@ -108,17 +108,38 @@ func handleGatekeeper(ctx *context) {
 		return
 	}
 
+	hasRole := false
+	if arrayContains(member.Roles, roleID) {
+		hasRole = true
+	}
+
 	/* Give a role */
 	if give {
+		if hasRole {
+			ctx.channelSend(fmt.Sprintf(
+				"You appear to already have that role, %s", member.Mention(),
+			))
+			return
+		}
 		ctx.Session.GuildMemberRoleAdd(guildID, userID, roleID)
 		ctx.channelSend(
-			fmt.Sprintf("You have been given role %s, %s", req, user.Mention()),
+			fmt.Sprintf(
+				"You have been given role `%s`, %s", req, member.Mention(),
+			),
 		)
-
 		return
 	}
 
 	/* Take a role */
+	if !hasRole {
+		ctx.channelSend(fmt.Sprintf(
+			"You don't have that role... How do you expect me to take it, %s?",
+			member.Mention(),
+		))
+		return
+	}
 	ctx.Session.GuildMemberRoleRemove(guildID, userID, roleID)
-	ctx.channelSend(fmt.Sprintf("Taking role %s away, %s", req, user.Mention()))
+	ctx.channelSend(fmt.Sprintf(
+		"Taking role `%s` away, %s", req, member.Mention(),
+	))
 }
