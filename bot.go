@@ -68,9 +68,9 @@ func main() {
 	mux.register("config", "", func(ctx *context) {
 		var sb strings.Builder
 		sb.WriteString(
-			fmt.Sprintf("`Requestable Roles: %+v`\n", config.requestableRoles))
+			fmt.Sprintf("`Requestable Roles: %+v`\n\n", config.requestableRoles))
 		sb.WriteString(
-			fmt.Sprintf("`Simple Commands: %+v`\n", config.simpleCommands))
+			fmt.Sprintf("`Simple Commands: %+v`\n\n", config.simpleCommands))
 		sb.WriteString(
 			fmt.Sprintf("`Permissions: %+v`", config.permissions))
 
@@ -78,6 +78,14 @@ func main() {
 	})
 
 	mux.register("wikirace", "Start a wikirace", handleWikirace)
+
+	/* Register commands from the config file */
+	for k := range config.simpleCommands {
+		k := k
+		mux.register(k, "", func(ctx *context) {
+			ctx.channelSend(config.simpleCommands[k])
+		})
+	}
 
 	mux.handleHelp("Available commands:")
 
