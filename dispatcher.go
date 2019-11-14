@@ -159,10 +159,6 @@ func (m *multiplexer) register(
 		return fmt.Errorf("Command '%v' too short", command)
 	}
 
-	if len(helpText) == 0 {
-		return fmt.Errorf("Help text '%v' too short", helpText)
-	}
-
 	m.Commands[command] = handler
 	m.HelpText[command] = helpText
 	return nil
