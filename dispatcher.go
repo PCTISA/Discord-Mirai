@@ -67,6 +67,11 @@ func (m *multiplexer) handle(
 		return
 	}
 
+	/* Ignore if the message is not a regular message */
+	if message.Type != discordgo.MessageTypeDefault {
+		return
+	}
+
 	/* Split the message on the space */
 	args := strings.Split(message.Content, " ")
 	if args[0][:1] != m.Prefix {
