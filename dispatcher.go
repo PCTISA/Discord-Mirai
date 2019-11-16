@@ -67,6 +67,11 @@ func (m *multiplexer) handle(
 		return
 	}
 
+	/* Ignore if the message is not a regular message */
+	if message.Type != discordgo.MessageTypeDefault {
+		return
+	}
+
 	/* Split the message on the space */
 	args := strings.Split(message.Content, " ")
 	if args[0][:1] != m.Prefix {
@@ -157,10 +162,6 @@ func (m *multiplexer) register(
 ) error {
 	if len(command) == 0 {
 		return fmt.Errorf("Command '%v' too short", command)
-	}
-
-	if len(helpText) == 0 {
-		return fmt.Errorf("Help text '%v' too short", helpText)
 	}
 
 	m.Commands[command] = handler
