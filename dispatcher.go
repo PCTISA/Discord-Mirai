@@ -68,7 +68,7 @@ func (m *multiplexer) handle(
 	}
 
 	/* Ignore if the message is not a regular message */
-	if message.Type != discordgo.MessageTypeDefault {
+	if message.Type != discordgo.MessageTypeDefault || len(message.Content) == 0 {
 		return
 	}
 
