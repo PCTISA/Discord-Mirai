@@ -34,3 +34,12 @@ func initLogging(debug bool) *logrus.Logger {
 	}
 	return log
 }
+
+func arrayContains(array []string, value string) bool {
+	for _, e := range array {
+		if e == value {
+			return true
+		}
+	}
+	return false
+}

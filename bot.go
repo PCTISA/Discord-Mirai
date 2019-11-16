@@ -79,6 +79,8 @@ func main() {
 
 	mux.register("wikirace", "Start a wikirace", handleWikirace)
 
+	mux.register("role", "Manage your access to a roles, and their related channels", handleGatekeeper)
+
 	/* Register commands from the config file */
 	for k := range config.simpleCommands {
 		k := k
@@ -86,6 +88,7 @@ func main() {
 			ctx.channelSend(config.simpleCommands[k])
 		})
 	}
+
 
 	mux.handleHelp("Available commands:")
 

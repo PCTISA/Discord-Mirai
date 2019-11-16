@@ -205,13 +205,3 @@ func (m *multiplexer) handleHelp(description string) {
 func (c *context) channelSend(message string) {
 	c.Session.ChannelMessageSend(c.Message.ChannelID, message)
 }
-
-/* TODO: Maybe move this to util if we need such functionality elsewhere? */
-func arrayContains(array []string, value string) bool {
-	for _, e := range array {
-		if e == value {
-			return true
-		}
-	}
-	return false
-}
