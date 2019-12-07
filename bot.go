@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
+	"github.com/CS-5/disgomux"
 	"github.com/bwmarrin/discordgo"
 	goenv "github.com/caarlos0/env/v6"
 	_ "github.com/joho/godotenv/autoload"
@@ -19,6 +19,8 @@ type (
 		Debug   bool   `env:"DEBUG" envDefault:"false"`
 		DataDir string `env:"DATA_DIR" envDefault:"data/"`
 	}
+
+	command string
 )
 
 var (
@@ -54,48 +56,53 @@ func main() {
 	log.Info("Bot started")
 
 	/* Initialize mux */
-	mux, err := newMux("!", "Unknown command D:", log, env.Debug)
+	dMux, err := disgomux.New("!")
 	if err != nil {
-		log.WithField("error", err).Fatalf("Unable to create multiplexer")
+		log.WithField("error", err).Fatalf("Unable to create multixplexer")
 	}
 
-	/* --- Register all the things --- */
-
-	mux.register("test", "", func(ctx *context) {
-		ctx.channelSend(fmt.Sprintf("%+v", ctx.Arguments))
+	dMux.Logger(muxLog{
+		logger: log, logMessages: true,
 	})
 
-	mux.register("config", "", func(ctx *context) {
-		var sb strings.Builder
-		sb.WriteString(
-			fmt.Sprintf("`Requestable Roles: %+v`\n\n", config.requestableRoles))
-		sb.WriteString(
-			fmt.Sprintf("`Simple Commands: %+v`\n\n", config.simpleCommands))
-		sb.WriteString(
-			fmt.Sprintf("`Permissions: %+v`", config.permissions))
-
-		ctx.channelSend(sb.String())
+	dMux.SetErrors(disgomux.ErrorTexts{
+		CommandNotFound: "Command not found D:",
+		NoPermissions:   "You do not have permissions to execute that command.",
 	})
 
-	mux.register("wikirace", "Start a wikirace", handleWikirace)
+	/* === Register all the things === */
 
-	mux.register("role", "Manage your access to a roles, and their related channels", handleGatekeeper)
+	dMux.Register(
+		cDebug{
+			Command:  "debug",
+			HelpText: "Debuging info for bot-wranglers",
+		},
+		cWiki{
+			Command:  "wikirace",
+			HelpText: "Start a wikirace",
+		},
+		cGate{
+			Command:  "role",
+			HelpText: "Manage your access to roles, and their related channels",
+		},
+	)
+
+	dMux.Initialize()
 
 	/* Register commands from the config file */
 	for k := range config.simpleCommands {
 		k := k
-		mux.register(k, "", func(ctx *context) {
-			ctx.channelSend(config.simpleCommands[k])
+		dMux.RegisterSimple(disgomux.SimpleCommand{
+			Command:  k,
+			Content:  config.simpleCommands[k],
+			HelpText: "This is a simple command",
 		})
 	}
 
-
-	mux.handleHelp("Available commands:")
-
-	/* --- End Register --- */
+	/* === End Register === */
 
 	/* Handle commands and start DiscordGo */
-	dg.AddHandler(mux.handle)
+	dg.AddHandler(dMux.Handle)
 	err = dg.Open()
 	if err != nil {
 		log.WithField("error", err).Error(
