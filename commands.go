@@ -13,6 +13,46 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+/* === Command Template === */
+/*
+
+type cName struct {
+	Command  string
+	HelpText string
+}
+
+func (n cName) Init(m *disgomux.Mux) {
+	// Initialization called before bot starts
+}
+
+func (n cName) Handle(ctx *disgomux.Context) {
+	// Handle called when command is recieved
+}
+
+func (n cName) HandleHelp(ctx *disgomux.Context) {
+	// HandleHelp is called by the help command (if there is one) to output
+	// specific help info
+}
+
+func (n cName) Settings() *disgomux.CommandSettings {
+	// Settings are called as-needed by the multiplexer to get configuration
+	// information
+
+	return &disgomux.CommandSettings{
+		Command:  n.Command,
+		HelpText: n.HelpText,
+	}
+}
+
+func (d cName) Permissions() *disgomux.CommandPermissions {
+	// Permissions are called as-needed by the multiplexer to get permissions
+	// needed for the command
+
+	// For no permissions:
+	return &disgomux.CommandPermissions{}
+}
+*/
+
 /* === Start Debug Command === */
 
 type cDebug struct {
@@ -99,10 +139,10 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 	/* TODO: Maybe float these erros up to the handler? */
 	resp, err := http.Get("https://en.wikipedia.org/w/api.php?action=query&format=json&list=random&rnnamespace=0&rnlimit=2")
 	if err != nil {
-		log.WithFields(logrus.Fields{
+		cLog.WithFields(logrus.Fields{
 			"error":   err,
 			"command": ctx.Command,
-		}).Error("Unable to get random wikipedia page")
+		}).Errorf("Unable to get random wikipedia page")
 
 		ctx.ChannelSend(issueText)
 		return
@@ -110,7 +150,7 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithFields(logrus.Fields{
+		cLog.WithFields(logrus.Fields{
 			"error":   err,
 			"command": ctx.Command,
 		}).Error("Unable to read page")
@@ -122,7 +162,7 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 	var search wikiResult
 	err = json.Unmarshal(body, &search)
 	if err != nil {
-		log.WithFields(logrus.Fields{
+		cLog.WithFields(logrus.Fields{
 			"error":   err,
 			"command": ctx.Command,
 		}).Error("Unable to unmarshal page")
@@ -165,7 +205,15 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 }
 
 func (w cWiki) HandleHelp(ctx *disgomux.Context) {
-	// TODO: Finish this
+	var sb strings.Builder
+	sb.WriteString(
+		"Use `!wikirace` to start a new race! The rules are simple:\n",
+	)
+	sb.WriteString("1. Only blue links _within_ the article are allowed\n")
+	sb.WriteString("2. You cannot use the back button or the search function\n")
+	sb.WriteString("3. Whoever gets to end article in the fewest clicks wins\n")
+
+	ctx.ChannelSend(sb.String())
 }
 
 func (w cWiki) Settings() *disgomux.CommandSettings {
@@ -203,9 +251,11 @@ func (g cGate) Handle(ctx *disgomux.Context) {
 	guildID := ctx.Message.GuildID
 	roles, err := ctx.Session.GuildRoles(guildID)
 	if err != nil {
-		log.WithField("error", err).Errorf(
-			"Problem getting roles for guild `%v`", guildID,
-		)
+		cLog.WithFields(logrus.Fields{
+			"error":   err,
+			"command": ctx.Command,
+		}).Errorf(
+			"Problem getting roles for guild `%v`", guildID)
 		return
 	}
 
@@ -343,3 +393,80 @@ func nameToID(ctx *disgomux.Context, name *string) (string, error) {
 }
 
 /* === End Gatekeeper Command === */
+
+/* === Start Help Command === */
+
+type cHelp struct {
+	Command  string
+	HelpText string
+}
+
+var (
+	helpHandlers = make(map[string]func(ctx *disgomux.Context))
+	helpFields   []*discordgo.MessageEmbedField
+)
+
+func (h cHelp) Init(m *disgomux.Mux) {
+	i := 0
+	for k, v := range m.Commands {
+		msg := v.Settings().HelpText
+
+		/* If there is no description, omit command from help */
+		if len(msg) == 0 {
+			continue
+		}
+
+		helpHandlers[k] = v.HandleHelp
+		helpFields = append(helpFields, &discordgo.MessageEmbedField{
+			Name:   m.Prefix + k,
+			Value:  msg,
+			Inline: true,
+		})
+		i++
+	}
+
+	cLog.WithField("command", h.Command).Infof(
+		"Loaded help handlers and messages for %d commands", i,
+	)
+}
+
+func (h cHelp) Handle(ctx *disgomux.Context) {
+	if len(ctx.Arguments) == 0 {
+		ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
+			&discordgo.MessageEmbed{
+				Title:       ":regional_indicator_h::regional_indicator_e::regional_indicator_l::regional_indicator_p:",
+				Author:      &discordgo.MessageEmbedAuthor{},
+				Color:       0xfdd329,
+				Description: "Available commands:",
+				Fields:      helpFields,
+			})
+		return
+	}
+
+	command, ok := helpHandlers[ctx.Arguments[0]]
+	if !ok {
+		ctx.ChannelSend(fmt.Sprintf(
+			"Unable to find help info for command `%s`", ctx.Arguments[0],
+		))
+		return
+	}
+
+	command(ctx)
+}
+
+func (h cHelp) HandleHelp(ctx *disgomux.Context) {
+	ctx.ChannelSend("Are you sure _you_ don't need help?")
+}
+
+func (h cHelp) Settings() *disgomux.CommandSettings {
+	return &disgomux.CommandSettings{
+		Command:  h.Command,
+		HelpText: h.HelpText,
+	}
+}
+
+func (h cHelp) Permissions() *disgomux.CommandPermissions {
+	return &disgomux.CommandPermissions{}
+}
+
+/* === End Help Command === */
