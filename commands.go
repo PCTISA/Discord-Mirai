@@ -84,11 +84,11 @@ func (d cDebug) HandleHelp(ctx *disgomux.Context) {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf(
 		"`%s%s config`: Returns the contents of the JSON config file.\n",
-		ctx.Prefix, ctx.Command,
+		ctx.Prefix, d.Command,
 	))
 	sb.WriteString(fmt.Sprintf(
 		"`%s%s args`: Returns the supplied arguments.",
-		ctx.Prefix, ctx.Command,
+		ctx.Prefix, d.Command,
 	))
 	ctx.ChannelSend(sb.String())
 }
