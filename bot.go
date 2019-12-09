@@ -26,6 +26,8 @@ type (
 var (
 	env    = environment{}
 	log    *logrus.Logger
+	cLog   *logrus.Entry // Log for commanbds
+	mLog   *logrus.Entry // Log for multiplexer
 	config *botConfig
 )
 
@@ -44,6 +46,9 @@ func init() {
 	if err != nil {
 		log.WithField("error", err).Error("Problem executing config command")
 	}
+
+	cLog = log.WithField("type", "command")
+	mLog = log.WithField("type", "multiplexer")
 }
 
 func main() {
@@ -62,7 +67,7 @@ func main() {
 	}
 
 	dMux.Logger(muxLog{
-		logger: log, logMessages: true,
+		logEntry: mLog, logAll: true,
 	})
 
 	dMux.SetErrors(disgomux.ErrorTexts{
@@ -84,6 +89,10 @@ func main() {
 		cGate{
 			Command:  "role",
 			HelpText: "Manage your access to roles, and their related channels",
+		},
+		cHelp{
+			Command:  "help",
+			HelpText: "Displays help information regarding the bot's commands",
 		},
 	)
 

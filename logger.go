@@ -6,20 +6,20 @@ import (
 )
 
 type muxLog struct {
-	logger      *logrus.Logger
-	logMessages bool
+	logEntry *logrus.Entry
+	logAll   bool
 }
 
 func (ml muxLog) Init(mux *disgomux.Mux) {
-
+	// Nothing to init
 }
 
 func (ml muxLog) MessageRecieved(ctx *disgomux.Context) {
-	if ml.logMessages {
+	if ml.logAll {
 		ch, _ := ctx.Session.Channel(ctx.Message.ChannelID)
 		gu, _ := ctx.Session.Guild(ctx.Message.GuildID)
 
-		ml.logger.WithFields(logrus.Fields{
+		ml.logEntry.WithFields(logrus.Fields{
 			"messageGuild":   gu.Name,
 			"messageChannel": ch.Name,
 			"messageAuthor":  ctx.Message.Author.Username,
@@ -28,18 +28,12 @@ func (ml muxLog) MessageRecieved(ctx *disgomux.Context) {
 	}
 }
 
-func (ml muxLog) Info(ctx *disgomux.Context, message string) {
-	ml.logger.Info(message)
+func (ml muxLog) CommandRegistered(cs *disgomux.CommandSettings) {
+	ml.logEntry.WithField("command", cs.Command).Info(
+		"Multiplexer command sucessfully registered.",
+	)
 }
 
-func (ml muxLog) Warn(ctx *disgomux.Context, message string) {
-	ml.logger.Warn(message)
-}
-
-func (ml muxLog) Error(ctx *disgomux.Context, message string) {
-	ml.logger.Error(message)
-}
-
-func (ml muxLog) Done(mux *disgomux.Mux) {
-
+func (ml muxLog) InitializeComplete(m *disgomux.Mux) {
+	ml.logEntry.Info("Multiplexer initialization complete.")
 }
