@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    VERSION = "0.1"  
+    VERSION = "1.0"  
       
     registry = "docker.pkg.github.com/pulsedevelopmentgroup/0x626f74/zeroxsix"
     registryCredential = "githubpr"

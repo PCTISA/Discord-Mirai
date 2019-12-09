@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/CS-5/disgomux"
 	"github.com/bwmarrin/discordgo"
 	goenv "github.com/caarlos0/env/v6"
 	_ "github.com/joho/godotenv/autoload"
@@ -18,11 +19,16 @@ type (
 		Debug   bool   `env:"DEBUG" envDefault:"false"`
 		DataDir string `env:"DATA_DIR" envDefault:"data/"`
 	}
+
+	command string
 )
 
 var (
-	env = environment{}
-	log *logrus.Logger
+	env    = environment{}
+	log    *logrus.Logger
+	cLog   *logrus.Entry // Log for commanbds
+	mLog   *logrus.Entry // Log for multiplexer
+	config *botConfig
 )
 
 func init() {
@@ -31,47 +37,81 @@ func init() {
 		fmt.Printf("%+v\n", err)
 	}
 
-	fmt.Printf("%+v\n", env)
-
 	/* Define logging setup */
-	logrus.SetOutput(os.Stdout)
-	log = logrus.New()
+	log = initLogging(env.Debug)
 
-	logrus.SetLevel(logrus.DebugLevel)
-	log.SetFormatter(&logrus.TextFormatter{
-		ForceColors: true,
-	})
-
-	if !env.Debug {
-		logrus.SetLevel(logrus.InfoLevel)
-		log.SetFormatter(&logrus.JSONFormatter{})
+	/* Parse config */
+	var err error
+	config, err = getConfig(env.DataDir + "config.json")
+	if err != nil {
+		log.WithField("error", err).Error("Problem executing config command")
 	}
+
+	cLog = log.WithField("type", "command")
+	mLog = log.WithField("type", "multiplexer")
 }
 
 func main() {
+	/* Initialize DiscordGo */
 	log.Info("Starting Bot...")
 	dg, err := discordgo.New("Bot " + env.Token)
 	if err != nil {
 		log.WithField("error", err).Error("Problem starting bot")
 	}
-
 	log.Info("Bot started")
 
-	mux, err := newMux("!", "Unknown command D:", log, env.Debug)
+	/* Initialize mux */
+	dMux, err := disgomux.New("!")
 	if err != nil {
-		log.WithField("error", err).Fatalf("Unable to create multiplexer")
+		log.WithField("error", err).Fatalf("Unable to create multixplexer")
 	}
 
-	dg.AddHandler(mux.handle)
-
-	mux.register("test", "Tests the bot", func(ctx *context) {
-		ctx.channelSend(fmt.Sprintf("%+v", ctx.Arguments))
+	dMux.Logger(muxLog{
+		logEntry: mLog, logAll: true,
 	})
 
-	mux.register("wikirace", "Start a wikirace", handleWikirace)
+	dMux.SetErrors(disgomux.ErrorTexts{
+		CommandNotFound: "Command not found D:",
+		NoPermissions:   "You do not have permissions to execute that command.",
+	})
 
-	mux.handleHelp("Available commands:")
+	/* === Register all the things === */
 
+	dMux.Register(
+		cDebug{
+			Command:  "debug",
+			HelpText: "Debuging info for bot-wranglers",
+		},
+		cWiki{
+			Command:  "wikirace",
+			HelpText: "Start a wikirace",
+		},
+		cGate{
+			Command:  "role",
+			HelpText: "Manage your access to roles, and their related channels",
+		},
+		cHelp{
+			Command:  "help",
+			HelpText: "Displays help information regarding the bot's commands",
+		},
+	)
+
+	dMux.Initialize()
+
+	/* Register commands from the config file */
+	for k := range config.simpleCommands {
+		k := k
+		dMux.RegisterSimple(disgomux.SimpleCommand{
+			Command:  k,
+			Content:  config.simpleCommands[k],
+			HelpText: "This is a simple command",
+		})
+	}
+
+	/* === End Register === */
+
+	/* Handle commands and start DiscordGo */
+	dg.AddHandler(dMux.Handle)
 	err = dg.Open()
 	if err != nil {
 		log.WithField("error", err).Error(
