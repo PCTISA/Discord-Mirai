@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -11,6 +12,8 @@ import (
 	goenv "github.com/caarlos0/env/v6"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/sirupsen/logrus"
+
+	"github.com/labstack/echo"
 )
 
 type (
@@ -42,6 +45,20 @@ func init() {
 	if err != nil {
 		log.WithField("error", err).Error("Problem executing config command")
 	}
+}
+
+func initServer(ch chan string) {
+	e := echo.New()
+	e.GET("/", func(c echo.Context) error {
+		return c.String(http.StatusOK, "Pong!")
+	})
+	e.POST("/", func(c echo.Context) error {
+		msg := c.QueryParam("msg")
+		ch <- msg
+		return c.String(http.StatusOK, "Message sending")
+	})
+
+	e.Start(":1323")
 }
 
 func main() {
@@ -89,7 +106,6 @@ func main() {
 		})
 	}
 
-
 	mux.handleHelp("Available commands:")
 
 	/* --- End Register --- */
@@ -103,10 +119,27 @@ func main() {
 		)
 		return
 	}
+
+	apiChan := make(chan string)
+
+	go initServer(apiChan)
+
 	defer dg.Close()
 
 	/* Wait for interrupt */
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
+	for {
+		select {
+		case <-sc:
+			// handle <C-c>
+			return
+		case msg := <-apiChan:
+			log.Info(msg)
+			dg.ChannelMessageSend("595357990920388637", msg)
+
+		default:
+			// do nothing
+		}
+	}
 }
