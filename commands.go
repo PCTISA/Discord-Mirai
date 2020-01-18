@@ -508,15 +508,28 @@ func (i cInspire) Handle(ctx *disgomux.Context) {
 			return
 		}
 
-		ctx.ChannelSend(string(body))
-	} else {
-		cLog.WithFields(logrus.Fields{
-			"command": ctx.Command,
-		}).Errorf("Non-ok response from InspiroBot")
+		imageURL := string(body)
 
-		ctx.ChannelSend("Sorry, I couldn't chat with InspiroBot. Maybe try again later?")
+		imgResp, err := http.Get(imageURL)
+		if err != nil {
+			cLog.WithFields(logrus.Fields{
+				"error":   err,
+				"command": ctx.Command,
+			}).Errorf("Failed to parse image response")
+
+			ctx.ChannelSend(issueText)
+			return
+		}
+
+		defer imgResp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			ctx.Session.ChannelFileSend(ctx.Message.ChannelID, "inspiration.jpg", imgResp.Body)
+			return
+		}
 	}
 
+	ctx.ChannelSend("Sorry, I couldn't chat with InspiroBot. Maybe try again later?")
 }
 
 func (i cInspire) HandleHelp(ctx *disgomux.Context) {
