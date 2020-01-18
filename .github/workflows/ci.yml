@@ -1,0 +1,24 @@
+name: 'CI'
+
+on:
+  release:
+      types: [published]
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      
+    - name: 'Docker Build/Push'
+      uses: matootie/github-docker@v2.0.0
+      with:
+        # GitHub Repository Token to log in using.
+        accessToken: ${{ secrets.GITHUB_TOKEN }}
+        # Where should GitHub Docker find the Dockerfile, relative to the root of the repository.
+        context: .ci
+        # The desired name for the image. Defaults to current repository name.
+        imageName: zeroxsix
+        # The desired tag for the image. Defaults to current branch or release version number.
+        #imageTag: # optional
