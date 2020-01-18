@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/jpeg"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -548,3 +550,92 @@ func (i cInspire) Permissions() *disgomux.CommandPermissions {
 }
 
 /* === End InspiroBot Command === */
+
+/* === Begin JPEG Command === */
+
+type cJPEG struct {
+	Command  string
+	HelpText string
+}
+
+func (i cJPEG) Init(m *disgomux.Mux) {
+	// Nothing to init
+}
+
+func (i cJPEG) Handle(ctx *disgomux.Context) {
+	ctx.ChannelSend("Prepare to be JPEGified!")
+	// channel, err := ctx.Session.Channel(ctx.Message.ChannelID)
+	// if err != nil {
+	// 	ctx.ChannelSend("Something went wrong")
+	// 	return
+	// }
+
+	messages, err := ctx.Session.ChannelMessages(ctx.Message.ChannelID, 10, "", "", "")
+	if err != nil {
+		ctx.ChannelSend("Something went wrong")
+		return
+	}
+
+	var lastAttachment *discordgo.MessageAttachment
+
+	messageLen := len(messages)
+	for i := range messages {
+		var message = messages[messageLen-1-i]
+		if len(message.Attachments) > 0 {
+			for _, attachment := range message.Attachments {
+				fmt.Printf(attachment.Filename)
+				lastAttachment = attachment
+				break
+			}
+		}
+	}
+
+	if lastAttachment == nil {
+		ctx.ChannelSend("Couldn't find valid image")
+		return
+	}
+
+	if strings.HasSuffix(lastAttachment.ProxyURL, ".jpg") {
+
+		var req, err = http.Get(lastAttachment.ProxyURL)
+		if err != nil {
+			// TODO
+			ctx.ChannelSend("Something went wrong D:")
+			return
+		}
+
+		defer req.Body.Close()
+
+		var buf bytes.Buffer
+
+		img, err := jpeg.Decode(req.Body)
+		options := jpeg.Options{
+			Quality: 1,
+		}
+
+		err = jpeg.Encode(&buf, img, &options)
+		if err != nil {
+			fmt.Printf("%v", err)
+		}
+
+		ctx.Session.ChannelFileSend(ctx.Message.ChannelID, lastAttachment.Filename, &buf)
+		return
+	}
+}
+
+func (i cJPEG) HandleHelp(ctx *disgomux.Context) {
+	// TODO
+}
+
+func (i cJPEG) Settings() *disgomux.CommandSettings {
+	return &disgomux.CommandSettings{
+		Command:  i.Command,
+		HelpText: i.HelpText,
+	}
+}
+
+func (i cJPEG) Permissions() *disgomux.CommandPermissions {
+	return &disgomux.CommandPermissions{}
+}
+
+/* === End Jpeg Command === */

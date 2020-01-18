@@ -98,6 +98,10 @@ func main() {
 			Command:  "inspire",
 			HelpText: "Get an inspirational quote from inspirobot.me",
 		},
+		cJPEG{
+			Command:  "jpeg",
+			HelpText: "More JPEG for the last image. 'nuff said",
+		},
 	)
 
 	dMux.Initialize()
