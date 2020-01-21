@@ -19,13 +19,6 @@ jobs:
         with:
           accessToken: ${{ secrets.GITHUB_TOKEN }}
           context: .ci
-          imageName: zeroxsix
-          
-      - name: Notify
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
-        with:
-          args: 'Sucessfully built and pushed 0x626f74, version ${{ env.GITHUB_REF }} to GitHub Registry: https://${{ steps.build.outputs.imageURL }}'
+          imageName: bot
         
   
