@@ -94,6 +94,10 @@ func main() {
 			Command:  "help",
 			HelpText: "Displays help information regarding the bot's commands",
 		},
+		cInspire{
+			Command:  "inspire",
+			HelpText: "Get an inspirational quote from inspirobot.me",
+		},
 	)
 
 	dMux.Initialize()

@@ -470,3 +470,81 @@ func (h cHelp) Permissions() *disgomux.CommandPermissions {
 }
 
 /* === End Help Command === */
+
+/* === Begin InspiroBot Command === */
+
+type cInspire struct {
+	Command  string
+	HelpText string
+}
+
+func (i cInspire) Init(m *disgomux.Mux) {
+	// Nothing to init
+}
+
+func (i cInspire) Handle(ctx *disgomux.Context) {
+	resp, err := http.Get("http://inspirobot.me/api?generate=true")
+	if err != nil {
+		cLog.WithFields(logrus.Fields{
+			"error":   err,
+			"command": ctx.Command,
+		}).Errorf("Unable to get inspirational qoute")
+
+		ctx.ChannelSend(issueText)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			cLog.WithFields(logrus.Fields{
+				"error":   err,
+				"command": ctx.Command,
+			}).Errorf("Unable to parse InspiroBot response")
+
+			ctx.ChannelSend(issueText)
+			return
+		}
+
+		imageURL := string(body)
+
+		imgResp, err := http.Get(imageURL)
+		if err != nil {
+			cLog.WithFields(logrus.Fields{
+				"error":   err,
+				"command": ctx.Command,
+			}).Errorf("Failed to parse image response")
+
+			ctx.ChannelSend(issueText)
+			return
+		}
+
+		defer imgResp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			ctx.Session.ChannelFileSend(ctx.Message.ChannelID, "inspiration.jpg", imgResp.Body)
+			return
+		}
+	}
+
+	ctx.ChannelSend("Sorry, I couldn't chat with InspiroBot. Maybe try again later?")
+}
+
+func (i cInspire) HandleHelp(ctx *disgomux.Context) {
+	// TODO
+}
+
+func (i cInspire) Settings() *disgomux.CommandSettings {
+	return &disgomux.CommandSettings{
+		Command:  i.Command,
+		HelpText: i.HelpText,
+	}
+}
+
+func (i cInspire) Permissions() *disgomux.CommandPermissions {
+	return &disgomux.CommandPermissions{}
+}
+
+/* === End InspiroBot Command === */
