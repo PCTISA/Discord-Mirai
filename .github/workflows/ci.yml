@@ -26,6 +26,6 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }} 
         with:
-          args: 'Sucessfully built and pushed 0x626f74, version ${ env.GITHUB_REF } to GitHub Registry: ${{ steps.build.outputs.imageURL }}'
+          args: 'Sucessfully built and pushed 0x626f74, version ${{ env.GITHUB_REF }} to GitHub Registry: https://${{ steps.build.outputs.imageURL }}'
         
   
