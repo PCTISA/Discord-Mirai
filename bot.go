@@ -96,7 +96,7 @@ func main() {
 		},
 		cInspire{
 			Command:  "inspire",
-			HelpText: "Get an inspirational quote from inspirobot.me",
+			HelpText: "Get an inspirational quote from inspirobot.me (use at your own risk)",
 		},
 	)
 
