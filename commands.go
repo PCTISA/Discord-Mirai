@@ -564,33 +564,45 @@ func (i cJPEG) Init(m *disgomux.Mux) {
 }
 
 func (i cJPEG) Handle(ctx *disgomux.Context) {
-	messages, err := ctx.Session.ChannelMessages(ctx.Message.ChannelID, 2, ctx.Message.ID, "", "")
-	if err != nil {
-		i.issue(err, ctx)
-		return
-	}
+	var message *discordgo.Message
 
-	var lastAttachment *discordgo.MessageAttachment
+	if len(ctx.Arguments) == 0 {
+		messages, err := ctx.Session.ChannelMessages(
+			ctx.Message.ChannelID, 2, ctx.Message.ID, "", "",
+		)
+		if err != nil {
+			i.issue(err, ctx)
+			return
+		}
 
-	messageLen := len(messages)
-	for i := range messages {
-		message := messages[messageLen-1-i]
-
-		if len(message.Attachments) > 0 {
-			for _, attachment := range message.Attachments {
-				lastAttachment = attachment
-				break
-			}
+		messageLen := len(messages)
+		for i := range messages {
+			message = messages[messageLen-1-i]
+		}
+	} else {
+		var err error
+		message, err = ctx.Session.ChannelMessage(
+			ctx.Message.ChannelID, ctx.Arguments[0],
+		)
+		if err != nil {
+			ctx.ChannelSend(
+				fmt.Sprintf(
+					"No message with ID `%s` found in this channel.",
+					ctx.Arguments[0],
+				),
+			)
+			return
 		}
 	}
 
-	if lastAttachment == nil {
-		ctx.ChannelSend("Couldn't find valid image")
+	if len(message.Attachments) == 0 || message.Attachments[0] == nil {
+		ctx.ChannelSend("The message doesn't have any attachments.")
 		return
 	}
 
-	if strings.HasSuffix(lastAttachment.ProxyURL, ".png") || strings.HasSuffix(lastAttachment.ProxyURL, ".jpg") {
-		req, err := http.Get(lastAttachment.ProxyURL)
+	attachment := message.Attachments[0]
+	if strings.HasSuffix(attachment.ProxyURL, ".png") || strings.HasSuffix(attachment.ProxyURL, ".jpg") {
+		req, err := http.Get(attachment.ProxyURL)
 		if err != nil {
 			i.issue(err, ctx)
 			return
@@ -605,7 +617,7 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 
 		var buf bytes.Buffer // Buffer to return image
 		err = jpeg.Encode(&buf, img, &jpeg.Options{
-			Quality: 10,
+			Quality: 1,
 		})
 		if err != nil {
 			i.issue(err, ctx)
@@ -614,7 +626,7 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 
 		ctx.Session.ChannelFileSend(
 			ctx.Message.ChannelID,
-			lastAttachment.Filename,
+			attachment.Filename,
 			&buf,
 		)
 		return
@@ -632,7 +644,7 @@ func (i cJPEG) issue(e error, ctx *disgomux.Context) {
 }
 
 func (i cJPEG) HandleHelp(ctx *disgomux.Context) {
-	// TODO
+	ctx.ChannelSend("`!jpeg` to JPEGify the image that was just sent.\n`!jpeg [message ID]` to JPEGify a specific image in this channel.")
 }
 
 func (i cJPEG) Settings() *disgomux.CommandSettings {
