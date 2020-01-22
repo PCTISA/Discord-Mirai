@@ -65,6 +65,11 @@ func (d cDebug) Init(m *disgomux.Mux) {
 }
 
 func (d cDebug) Handle(ctx *disgomux.Context) {
+	if len(ctx.Arguments) == 0 {
+		d.HandleHelp(ctx)
+		return
+	}
+
 	switch ctx.Arguments[0] {
 	case "config":
 		var sb strings.Builder
