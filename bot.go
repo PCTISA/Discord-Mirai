@@ -19,8 +19,6 @@ type (
 		Debug   bool   `env:"DEBUG" envDefault:"false"`
 		DataDir string `env:"DATA_DIR" envDefault:"data/"`
 	}
-
-	command string
 )
 
 var (
