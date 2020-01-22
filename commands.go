@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"io/ioutil"
 	"net/http"
@@ -563,16 +564,9 @@ func (i cJPEG) Init(m *disgomux.Mux) {
 }
 
 func (i cJPEG) Handle(ctx *disgomux.Context) {
-	ctx.ChannelSend("Prepare to be JPEGified!")
-	// channel, err := ctx.Session.Channel(ctx.Message.ChannelID)
-	// if err != nil {
-	// 	ctx.ChannelSend("Something went wrong")
-	// 	return
-	// }
-
-	messages, err := ctx.Session.ChannelMessages(ctx.Message.ChannelID, 10, "", "", "")
+	messages, err := ctx.Session.ChannelMessages(ctx.Message.ChannelID, 2, ctx.Message.ID, "", "")
 	if err != nil {
-		ctx.ChannelSend("Something went wrong")
+		i.issue(err, ctx)
 		return
 	}
 
@@ -580,10 +574,10 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 
 	messageLen := len(messages)
 	for i := range messages {
-		var message = messages[messageLen-1-i]
+		message := messages[messageLen-1-i]
+
 		if len(message.Attachments) > 0 {
 			for _, attachment := range message.Attachments {
-				fmt.Printf(attachment.Filename)
 				lastAttachment = attachment
 				break
 			}
@@ -595,32 +589,46 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 		return
 	}
 
-	if strings.HasSuffix(lastAttachment.ProxyURL, ".jpg") {
-
-		var req, err = http.Get(lastAttachment.ProxyURL)
+	if strings.HasSuffix(lastAttachment.ProxyURL, ".png") || strings.HasSuffix(lastAttachment.ProxyURL, ".jpg") {
+		req, err := http.Get(lastAttachment.ProxyURL)
 		if err != nil {
-			// TODO
-			ctx.ChannelSend("Something went wrong D:")
+			i.issue(err, ctx)
+			return
+		}
+		defer req.Body.Close()
+
+		img, _, err := image.Decode(req.Body)
+		if err != nil {
+			i.issue(err, ctx)
 			return
 		}
 
-		defer req.Body.Close()
-
-		var buf bytes.Buffer
-
-		img, err := jpeg.Decode(req.Body)
-		options := jpeg.Options{
-			Quality: 1,
-		}
-
-		err = jpeg.Encode(&buf, img, &options)
+		var buf bytes.Buffer // Buffer to return image
+		err = jpeg.Encode(&buf, img, &jpeg.Options{
+			Quality: 10,
+		})
 		if err != nil {
-			fmt.Printf("%v", err)
+			i.issue(err, ctx)
+			return
 		}
 
-		ctx.Session.ChannelFileSend(ctx.Message.ChannelID, lastAttachment.Filename, &buf)
+		ctx.Session.ChannelFileSend(
+			ctx.Message.ChannelID,
+			lastAttachment.Filename,
+			&buf,
+		)
 		return
 	}
+	ctx.ChannelSend("No valid image to JPEGify (must be .jpg or .png)")
+}
+
+func (i cJPEG) issue(e error, ctx *disgomux.Context) {
+	cLog.WithFields(logrus.Fields{
+		"error":   e.Error(),
+		"command": ctx.Command,
+	}).Error("Failed to encode attachment")
+
+	ctx.ChannelSend(fmt.Sprintf(issueText+"\nError: `%s`", e.Error()))
 }
 
 func (i cJPEG) HandleHelp(ctx *disgomux.Context) {
