@@ -493,7 +493,6 @@ func (i cInspire) Handle(ctx *disgomux.Context) {
 		ctx.ChannelSend(issueText)
 		return
 	}
-
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
@@ -510,7 +509,8 @@ func (i cInspire) Handle(ctx *disgomux.Context) {
 
 		ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
 			&discordgo.MessageEmbed{
-				Color: 0x6dd3ff,
+				Description: "~~[Favorite]() | [Delete]()~~ _Work in progress_",
+				Color:       0x6dd3ff,
 				Image: &discordgo.MessageEmbedImage{
 					URL: string(body),
 				},
