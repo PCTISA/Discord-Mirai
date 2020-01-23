@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -542,3 +545,113 @@ func (i cInspire) Permissions() *disgomux.CommandPermissions {
 }
 
 /* === End InspiroBot Command === */
+
+/* === Begin JPEG Command === */
+
+type cJPEG struct {
+	Command  string
+	HelpText string
+}
+
+func (i cJPEG) Init(m *disgomux.Mux) {
+	// Nothing to init
+}
+
+func (i cJPEG) Handle(ctx *disgomux.Context) {
+	var message *discordgo.Message
+
+	if len(ctx.Arguments) == 0 {
+		messages, err := ctx.Session.ChannelMessages(
+			ctx.Message.ChannelID, 2, ctx.Message.ID, "", "",
+		)
+		if err != nil {
+			i.issue(err, ctx)
+			return
+		}
+
+		messageLen := len(messages)
+		for i := range messages {
+			message = messages[messageLen-1-i]
+		}
+	} else {
+		var err error
+		message, err = ctx.Session.ChannelMessage(
+			ctx.Message.ChannelID, ctx.Arguments[0],
+		)
+		if err != nil {
+			ctx.ChannelSend(
+				fmt.Sprintf(
+					"No message with ID `%s` found in this channel.",
+					ctx.Arguments[0],
+				),
+			)
+			return
+		}
+	}
+
+	if len(message.Attachments) == 0 || message.Attachments[0] == nil {
+		ctx.ChannelSend("The message doesn't have any attachments.")
+		return
+	}
+
+	attachment := message.Attachments[0]
+	if strings.HasSuffix(attachment.ProxyURL, ".png") ||
+		strings.HasSuffix(attachment.ProxyURL, ".jpg") ||
+		strings.HasSuffix(attachment.ProxyURL, ".jpeg") {
+		req, err := http.Get(attachment.ProxyURL)
+		if err != nil {
+			i.issue(err, ctx)
+			return
+		}
+		defer req.Body.Close()
+
+		img, _, err := image.Decode(req.Body)
+		if err != nil {
+			i.issue(err, ctx)
+			return
+		}
+
+		var buf bytes.Buffer // Buffer to return image
+		err = jpeg.Encode(&buf, img, &jpeg.Options{
+			Quality: 1,
+		})
+		if err != nil {
+			i.issue(err, ctx)
+			return
+		}
+
+		ctx.Session.ChannelFileSend(
+			ctx.Message.ChannelID,
+			attachment.Filename,
+			&buf,
+		)
+		return
+	}
+	ctx.ChannelSend("No valid image to JPEGify (must be .jpg or .png)")
+}
+
+func (i cJPEG) issue(e error, ctx *disgomux.Context) {
+	cLog.WithFields(logrus.Fields{
+		"error":   e.Error(),
+		"command": ctx.Command,
+	}).Error("Failed to encode attachment")
+
+	ctx.ChannelSend(fmt.Sprintf(issueText+"\nError: `%s`", e.Error()))
+}
+
+func (i cJPEG) HandleHelp(ctx *disgomux.Context) {
+	ctx.ChannelSend("`!jpeg` to JPEGify the image that was just sent.\n`!jpeg [message ID]` to JPEGify a specific image in this channel.")
+}
+
+func (i cJPEG) Settings() *disgomux.CommandSettings {
+	return &disgomux.CommandSettings{
+		Command:  i.Command,
+		HelpText: i.HelpText,
+	}
+}
+
+func (i cJPEG) Permissions() *disgomux.CommandPermissions {
+	return &disgomux.CommandPermissions{}
+}
+
+/* === End Jpeg Command === */
