@@ -10,11 +10,7 @@ type muxLog struct {
 	logAll   bool
 }
 
-func (ml muxLog) Init(mux *disgomux.Mux) {
-	// Nothing to init
-}
-
-func (ml muxLog) MessageRecieved(ctx *disgomux.Context) {
+func (ml *muxLog) Logger(ctx *disgomux.Context) {
 	if ml.logAll {
 		ch, _ := ctx.Session.Channel(ctx.Message.ChannelID)
 		gu, _ := ctx.Session.Guild(ctx.Message.GuildID)
@@ -26,14 +22,4 @@ func (ml muxLog) MessageRecieved(ctx *disgomux.Context) {
 			"messageContent": ctx.Message.Content,
 		}).Info("Message Recieved")
 	}
-}
-
-func (ml muxLog) CommandRegistered(cs *disgomux.CommandSettings) {
-	ml.logEntry.WithField("command", cs.Command).Info(
-		"Multiplexer command sucessfully registered.",
-	)
-}
-
-func (ml muxLog) InitializeComplete(m *disgomux.Mux) {
-	ml.logEntry.Info("Multiplexer initialization complete.")
 }

@@ -59,7 +59,7 @@ func getSimpleCommands(json string) (map[string]string, error) {
 			fmt.Errorf("unable to get list of simple commands from config file")
 	}
 
-	/* TODO: Better error handling in the event of a non-string value*/
+	/* TODO: Better error handling in the event of a non-string value */
 	for k, v := range m {
 		out[k] = v.(string)
 	}

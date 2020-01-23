@@ -4,6 +4,8 @@ github.com/CS-5/disgomux v0.0.0-20191206165513-71142124fbf4 h1:KHAdGBPNofXLGm+4G
 github.com/CS-5/disgomux v0.0.0-20191206165513-71142124fbf4/go.mod h1:yNBFwQct3j5zJr2L3RB2WtWTyRdBAONmYZk03INUZKM=
 github.com/CS-5/disgomux v0.0.0-20191209150914-93a0009ae65b h1:aBzkqePiw+8sJV9vV/BLPQ8dy4uGzoFfCsvTt2Tt8QQ=
 github.com/CS-5/disgomux v0.0.0-20191209150914-93a0009ae65b/go.mod h1:yNBFwQct3j5zJr2L3RB2WtWTyRdBAONmYZk03INUZKM=
+github.com/CS-5/disgomux v0.0.0-20200123181202-a1c431131cb4 h1:eFQNiX/M2z/J9FfogWat0dU8o4gTU8mK5VYkuqsuMyU=
+github.com/CS-5/disgomux v0.0.0-20200123181202-a1c431131cb4/go.mod h1:yNBFwQct3j5zJr2L3RB2WtWTyRdBAONmYZk03INUZKM=
 github.com/bwmarrin/discordgo v0.19.0 h1:kMED/DB0NR1QhRcalb85w0Cu3Ep2OrGAqZH1R5awQiY=
 github.com/bwmarrin/discordgo v0.19.0/go.mod h1:O9S4p+ofTFwB02em7jkpkV8M3R0/PUVOwN61zSZ0r4Q=
 github.com/bwmarrin/discordgo v0.20.1 h1:Ihh3/mVoRwy3otmaoPDUioILBJq4fdWkpsi83oj2Lmk=
