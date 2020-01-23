@@ -601,7 +601,9 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 	}
 
 	attachment := message.Attachments[0]
-	if strings.HasSuffix(attachment.ProxyURL, ".png") || strings.HasSuffix(attachment.ProxyURL, ".jpg") {
+	if strings.HasSuffix(attachment.ProxyURL, ".png") ||
+		strings.HasSuffix(attachment.ProxyURL, ".jpg") ||
+		strings.HasSuffix(attachment.ProxyURL, ".jpeg") {
 		req, err := http.Get(attachment.ProxyURL)
 		if err != nil {
 			i.issue(err, ctx)
