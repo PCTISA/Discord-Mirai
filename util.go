@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/CS-5/disgomux"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,4 +48,17 @@ func arrayContains(array []string, value string, ignoreCase bool) bool {
 		}
 	}
 	return false
+}
+
+func cmdIssue(ctx *disgomux.Context, e error, msg string) {
+	cLog.WithFields(logrus.Fields{
+		"command": ctx.Command,
+		"error":   e.Error(),
+	}).Error(msg)
+
+	if env.Debug {
+		ctx.ChannelSendf(msg+"\nError: `%s`", e.Error())
+		return
+	}
+	ctx.ChannelSend(msg)
 }

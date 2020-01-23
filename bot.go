@@ -27,6 +27,8 @@ var (
 	cLog   *logrus.Entry // Log for commanbds
 	mLog   *logrus.Entry // Log for multiplexer
 	config *botConfig
+
+	prefix = "!"
 )
 
 func init() {
@@ -58,18 +60,23 @@ func main() {
 	}
 	log.Info("Bot started")
 
-	/* Initialize mux */
-	dMux, err := disgomux.New("!")
+	/* Initialize Mux */
+	dMux, err := disgomux.New(prefix)
 	if err != nil {
 		log.WithField("error", err).Fatalf("Unable to create multixplexer")
 	}
 
-	dMux.Logger(muxLog{
-		logEntry: mLog, logAll: true,
-	})
+	/* Setup Logging */
+	logMW := &muxLog{
+		logAll:   env.Debug,
+		logEntry: mLog,
+	}
 
+	dMux.UseMiddleware(logMW.Logger)
+
+	/* Setup Errors */
 	dMux.SetErrors(disgomux.ErrorTexts{
-		CommandNotFound: "Command not found D:",
+		CommandNotFound: "Command not found.",
 		NoPermissions:   "You do not have permissions to execute that command.",
 	})
 
@@ -118,6 +125,7 @@ func main() {
 
 	/* Handle commands and start DiscordGo */
 	dg.AddHandler(dMux.Handle)
+
 	err = dg.Open()
 	if err != nil {
 		log.WithField("error", err).Error(
@@ -125,7 +133,6 @@ func main() {
 		)
 		return
 	}
-
 	defer dg.Close()
 
 	/* Wait for interrupt */
