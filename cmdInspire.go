@@ -3,6 +3,9 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"time"
+
+	"github.com/CS-5/disgoreact"
 
 	"github.com/CS-5/disgomux"
 	"github.com/bwmarrin/discordgo"
@@ -20,7 +23,7 @@ func (i cInspire) Init(m *disgomux.Mux) {
 func (i cInspire) Handle(ctx *disgomux.Context) {
 	resp, err := http.Get("http://inspirobot.me/api?generate=true")
 	if err != nil {
-		cmdIssue(ctx, err, "There was a contacting the InspiroBot API")
+		cmdIssue(ctx, err, "There was an error contacting the InspiroBot API")
 		return
 	}
 	defer resp.Body.Close()
@@ -32,18 +35,81 @@ func (i cInspire) Handle(ctx *disgomux.Context) {
 			return
 		}
 
-		ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
+		msg, err := ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
 			&discordgo.MessageEmbed{
-				Description: "~~[Favorite]() | [Delete]()~~ _Work in progress_",
-				Color:       0x6dd3ff,
+				Footer: &discordgo.MessageEmbedFooter{
+					Text: "Like: 😄 | Delete: ❌",
+				},
+				Color: 0x6dd3ff,
 				Image: &discordgo.MessageEmbedImage{
 					URL: string(body),
 				},
 			},
 		)
+
+		if err != nil {
+			cmdIssue(ctx, err, "There was an issue sending the embed")
+			return
+		}
+
+		w, err := disgoreact.NewWatcher(
+			msg, ctx.Session,
+			500*time.Millisecond,
+			ctx,
+		)
+		if err != nil {
+			cmdIssue(ctx, err, "There was an issue creating the reaction watcher")
+			return
+		}
+
+		err = w.Add(
+			disgoreact.Option{
+				Emoji:      "😄",
+				Expiration: 5 * time.Minute,
+				OnSucess:   i.like,
+				OnError:    i.reactErr,
+			},
+			disgoreact.Option{
+				Emoji:      "❌",
+				Expiration: 5 * time.Minute,
+				OnSucess:   i.delete,
+				OnError:    i.reactErr,
+			},
+		)
+		if err != nil {
+			cmdIssue(
+				ctx, err,
+				"There was an issue adding a one of the reaction options",
+			)
+		}
+
 		return
 	}
 	ctx.ChannelSend("Sorry, I couldn't chat with InspiroBot. Maybe try again later?")
+}
+
+func (i cInspire) delete(
+	user *discordgo.User,
+	ctx *disgoreact.WatchContext,
+) {
+	ctx.Session.ChannelMessageDelete(ctx.Message.ChannelID, ctx.Message.ID)
+}
+
+func (i cInspire) like(
+	user *discordgo.User,
+	ctx *disgoreact.WatchContext,
+) {
+	usrCh, err := ctx.Session.UserChannelCreate(user.ID)
+	if err != nil {
+		i.reactErr(err, ctx)
+		return
+	}
+
+	ctx.Session.ChannelMessageSend(usrCh.ID, "Glad you liked the inspirational quote! Here's the URL: "+ctx.Message.Embeds[0].Image.URL)
+}
+
+func (i cInspire) reactErr(err error, ctx *disgoreact.WatchContext) {
+	/* Not handling errors */
 }
 
 func (i cInspire) HandleHelp(ctx *disgomux.Context) bool {
