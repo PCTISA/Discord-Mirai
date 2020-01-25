@@ -12,13 +12,20 @@ jobs:
       - name: Checkout
         id: checkout
         uses: actions/checkout@v2
+
+      - name: Get the version
+        id: version
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
       
       - name: 'Docker Build/Push'
         id: build
-        uses: matootie/github-docker@v2.0.0
+        uses: elgohr/Publish-Docker-Github-Action@master
         with:
-          accessToken: ${{ secrets.GITHUB_TOKEN }}
-          context: .ci
-          imageName: bot
+          name: PulseDevelopmentGroup/0x626f74/bot
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          tags: "latest,${{ steps.version.outputs.VERSION }}"
+          
         
   
