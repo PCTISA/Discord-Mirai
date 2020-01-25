@@ -1,7 +1,11 @@
 github.com/CS-5/disgomux v0.1.0 h1:rYRvWhAM4lS5hwlEuFiMI3jqySC92lBwW//AnXZOkTg=
 github.com/CS-5/disgomux v0.1.0/go.mod h1:yNBFwQct3j5zJr2L3RB2WtWTyRdBAONmYZk03INUZKM=
+github.com/CS-5/disgomux v0.1.1 h1:Rv4rID6E/wL5QGwv0d0fPIBbfGgVxQOFbEoTBHW/EzY=
+github.com/CS-5/disgomux v0.1.1/go.mod h1:yNBFwQct3j5zJr2L3RB2WtWTyRdBAONmYZk03INUZKM=
 github.com/CS-5/disgoreact v0.1.0 h1:y6mkefQNyD5UGyxZse4HnnMp/Y1SH664TvWSqm/E1No=
 github.com/CS-5/disgoreact v0.1.0/go.mod h1:EGySEzEaqibfcTG27gwUx0BYj0G+Ky8HUVtTFmkvaE8=
+github.com/CS-5/disgoreact v0.1.1 h1:Ir0i0WBIwA5La5DTIynp9aZ+QiAywjyckxBmSI3wOvk=
+github.com/CS-5/disgoreact v0.1.1/go.mod h1:EGySEzEaqibfcTG27gwUx0BYj0G+Ky8HUVtTFmkvaE8=
 github.com/bwmarrin/discordgo v0.20.1 h1:Ihh3/mVoRwy3otmaoPDUioILBJq4fdWkpsi83oj2Lmk=
 github.com/bwmarrin/discordgo v0.20.1/go.mod h1:O9S4p+ofTFwB02em7jkpkV8M3R0/PUVOwN61zSZ0r4Q=
 github.com/bwmarrin/discordgo v0.20.2 h1:nA7jiTtqUA9lT93WL2jPjUp8ZTEInRujBdx1C9gkr20=
