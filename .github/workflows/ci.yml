@@ -21,7 +21,7 @@ jobs:
         id: build
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
-          name: PulseDevelopmentGroup/0x626f74/bot
+          name: pulsedevelopmentgroup/0x626f74/bot
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
