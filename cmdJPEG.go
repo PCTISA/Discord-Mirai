@@ -18,9 +18,9 @@ type cJPEG struct {
 }
 
 var (
-	imgSaturation float64 = 0
-	imgSharpening float64 = 1
-	imgBlur       float64 = 0
+	imgSaturation float64 = 100
+	imgSharpening float64 = 100
+	imgBlur       float64 = 3
 	imgQuality    int     = 1
 )
 
