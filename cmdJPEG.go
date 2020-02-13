@@ -9,12 +9,20 @@ import (
 
 	"github.com/CS-5/disgomux"
 	"github.com/bwmarrin/discordgo"
+	"github.com/disintegration/imaging"
 )
 
 type cJPEG struct {
 	Command  string
 	HelpText string
 }
+
+var (
+	imgSaturation float64 = 0
+	imgSharpening float64 = 1
+	imgBlur       float64 = 0
+	imgQuality    int     = 1
+)
 
 func (i cJPEG) Init(m *disgomux.Mux) {
 	// Nothing to init
@@ -66,15 +74,20 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 		}
 		defer req.Body.Close()
 
-		img, _, err := image.Decode(req.Body)
+		imgIn, _, err := image.Decode(req.Body)
 		if err != nil {
 			cmdIssue(ctx, err, "There was a problem decoding the image")
 			return
 		}
 
+		/* Tweak these values to adjust JPEGness */
+		img1 := imaging.AdjustSaturation(imgIn, imgSaturation)
+		img2 := imaging.Sharpen(img1, imgSharpening)
+		imgOut := imaging.Blur(img2, imgBlur)
+
 		var buf bytes.Buffer // Buffer to return image
-		err = jpeg.Encode(&buf, img, &jpeg.Options{
-			Quality: 1,
+		err = jpeg.Encode(&buf, imgOut, &jpeg.Options{
+			Quality: imgQuality,
 		})
 		if err != nil {
 			cmdIssue(ctx, err, "There was a problem endoding the image")
