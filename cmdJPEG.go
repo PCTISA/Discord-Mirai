@@ -19,7 +19,6 @@ type cJPEG struct {
 
 var (
 	imgSaturation float64 = 100
-	imgSharpening float64 = 100
 	imgBlur       float64 = 3
 	imgQuality    int     = 1
 )
@@ -82,8 +81,7 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 
 		/* Tweak these values to adjust JPEGness */
 		img1 := imaging.AdjustSaturation(imgIn, imgSaturation)
-		img2 := imaging.Sharpen(img1, imgSharpening)
-		imgOut := imaging.Blur(img2, imgBlur)
+		imgOut := imaging.Blur(img1, imgBlur)
 
 		var buf bytes.Buffer // Buffer to return image
 		err = jpeg.Encode(&buf, imgOut, &jpeg.Options{
