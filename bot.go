@@ -133,6 +133,15 @@ func main() {
 		)
 		return
 	}
+
+	dg.UpdateStatusComplex(discordgo.UpdateStatusData{
+		Game: &discordgo.Game{
+			Name: "you",
+			Type: discordgo.GameTypeWatching,
+		},
+		Status: "online",
+	})
+
 	defer dg.Close()
 
 	/* Wait for interrupt */
