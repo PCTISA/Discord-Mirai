@@ -109,7 +109,16 @@ func main() {
 		},
 	)
 
+	dMux.Options(&disgomux.Options{
+		IgnoreDMs:        true,
+		IgnoreBots:       true,
+		IgnoreNonDefault: true,
+		IgnoreEmpty:      true,
+	})
+
 	dMux.Initialize()
+
+	dMux.InitializeFuzzy()
 
 	/* Register commands from the config file */
 	for k := range config.simpleCommands {
