@@ -3,7 +3,7 @@ module 0x626f74
 go 1.13
 
 require (
-	github.com/CS-5/disgomux v0.2.0
+	github.com/CS-5/disgomux v0.2.1
 	github.com/CS-5/disgoreact v0.1.1
 	github.com/bwmarrin/discordgo v0.20.2
 	github.com/caarlos0/env/v6 v6.1.0
