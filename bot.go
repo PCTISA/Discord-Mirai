@@ -56,14 +56,14 @@ func main() {
 	log.Info("Starting Bot...")
 	dg, err := discordgo.New("Bot " + env.Token)
 	if err != nil {
-		log.WithField("error", err).Error("Problem starting bot")
+		log.WithError(err).Error("Problem starting bot")
 	}
 	log.Info("Bot started")
 
 	/* Initialize Mux */
 	dMux, err := disgomux.New(prefix)
 	if err != nil {
-		log.WithField("error", err).Fatalf("Unable to create multixplexer")
+		log.WithError(err).Fatalf("Unable to create multixplexer")
 	}
 
 	/* Setup Logging */
@@ -137,7 +137,7 @@ func main() {
 
 	err = dg.Open()
 	if err != nil {
-		log.WithField("error", err).Error(
+		log.WithError(err).Error(
 			"Problem opening websocket connection.",
 		)
 		return

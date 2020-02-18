@@ -51,10 +51,7 @@ func arrayContains(array []string, value string, ignoreCase bool) bool {
 }
 
 func cmdIssue(ctx *disgomux.Context, e error, msg string) {
-	cLog.WithFields(logrus.Fields{
-		"command": ctx.Command,
-		"error":   e.Error(),
-	}).Error(msg)
+	cLog.WithError(e).WithField("command", ctx.Command).Error(msg)
 
 	if env.Debug {
 		ctx.ChannelSendf(msg+"\nError: `%s`", e.Error())
