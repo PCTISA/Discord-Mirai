@@ -13,4 +13,5 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates
 COPY --from=0 /app/zeroxsix .
 
+EXPOSE 8080
 CMD ./zeroxsix
