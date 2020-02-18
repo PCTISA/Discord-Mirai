@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/CS-5/disgomux"
 	"github.com/bwmarrin/discordgo"
@@ -18,6 +19,8 @@ type (
 		Token   string `env:"BOT_TOKEN"`
 		Debug   bool   `env:"DEBUG" envDefault:"false"`
 		DataDir string `env:"DATA_DIR" envDefault:"data/"`
+		Stats   bool   `env:"USE_STATS" envDefault:"false"`
+		Fuzzy   bool   `env:"USE_FUZZY envDefault:false"`
 	}
 )
 
@@ -26,7 +29,9 @@ var (
 	log    *logrus.Logger
 	cLog   *logrus.Entry // Log for commanbds
 	mLog   *logrus.Entry // Log for multiplexer
+	sLog   *logrus.Entry // Log for stats handler
 	config *botConfig
+	stats  = new(statistics)
 
 	prefix = "!"
 )
@@ -49,6 +54,11 @@ func init() {
 
 	cLog = log.WithField("type", "command")
 	mLog = log.WithField("type", "multiplexer")
+	sLog = log.WithField("type", "stats")
+
+	if env.Stats {
+		stats = statsInit(5*time.Minute, sLog)
+	}
 }
 
 func main() {
@@ -65,6 +75,9 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to create multixplexer")
 	}
+
+	/* Setup Stats Collector */
+	dMux.UseMiddleware(stats.middleware)
 
 	/* Setup Logging */
 	logMW := &muxLog{
@@ -118,7 +131,9 @@ func main() {
 
 	dMux.Initialize()
 
-	dMux.InitializeFuzzy()
+	if env.Fuzzy {
+		dMux.InitializeFuzzy()
+	}
 
 	/* Register commands from the config file */
 	for k := range config.simpleCommands {
@@ -134,6 +149,7 @@ func main() {
 
 	/* Handle commands and start DiscordGo */
 	dg.AddHandler(dMux.Handle)
+	dg.AddHandler(stats.handle)
 
 	err = dg.Open()
 	if err != nil {
