@@ -77,7 +77,9 @@ func main() {
 	}
 
 	/* Setup Stats Collector */
-	dMux.UseMiddleware(stats.middleware)
+	if env.Stats {
+		dMux.UseMiddleware(stats.middleware)
+	}
 
 	/* Setup Logging */
 	logMW := &muxLog{
@@ -149,7 +151,10 @@ func main() {
 
 	/* Handle commands and start DiscordGo */
 	dg.AddHandler(dMux.Handle)
-	dg.AddHandler(stats.handle)
+
+	if env.Stats {
+		dg.AddHandler(stats.handle)
+	}
 
 	err = dg.Open()
 	if err != nil {
