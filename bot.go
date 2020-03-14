@@ -18,7 +18,6 @@ type (
 		Token   string `env:"BOT_TOKEN"`
 		Debug   bool   `env:"DEBUG" envDefault:"false"`
 		DataDir string `env:"DATA_DIR" envDefault:"data/"`
-		Stats   bool   `env:"USE_STATS" envDefault:"false"`
 		Fuzzy   bool   `env:"USE_FUZZY" envDefault:"false"`
 	}
 )
