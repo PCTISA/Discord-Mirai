@@ -9,6 +9,7 @@ require (
 	github.com/caarlos0/env/v6 v6.1.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/gorilla/websocket v1.4.1 // indirect
+	github.com/influxdata/influxdb-client-go v0.1.5
 	github.com/joho/godotenv v1.3.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
