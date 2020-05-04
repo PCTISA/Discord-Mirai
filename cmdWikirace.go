@@ -32,11 +32,11 @@ type (
 
 const issueText = "Hmm... I seem to have run into an issue... Try again later?"
 
-func (w cWiki) Init(m *disgomux.Mux) {
+func (c cWiki) Init(m *disgomux.Mux) {
 	// Nothing to init
 }
 
-func (w cWiki) Handle(ctx *disgomux.Context) {
+func (c cWiki) Handle(ctx *disgomux.Context) {
 	resp, err := http.Get("https://en.wikipedia.org/w/api.php?action=query&format=json&list=random&rnnamespace=0&rnlimit=2")
 	if err != nil {
 		cmdIssue(ctx, err, "Unable to get random wikipedia page")
@@ -65,7 +65,7 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 			Color:       0x0080ff,
 			Description: "Start at the start and use only blue links in the article to get to the end page!",
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{
+				{
 					Name: "Start:vertical_traffic_light:",
 					Value: fmt.Sprintf(
 						"[%s](%s%d)",
@@ -75,7 +75,7 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 					),
 					Inline: false,
 				},
-				&discordgo.MessageEmbedField{
+				{
 					Name: "End :checkered_flag:",
 					Value: fmt.Sprintf(
 						"[%s](%s%d)",
@@ -89,7 +89,7 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 		})
 }
 
-func (w cWiki) HandleHelp(ctx *disgomux.Context) bool {
+func (c cWiki) HandleHelp(ctx *disgomux.Context) bool {
 	var sb strings.Builder
 	sb.WriteString(
 		"Use `!wikirace` to start a new race! The rules are simple:\n",
@@ -102,15 +102,13 @@ func (w cWiki) HandleHelp(ctx *disgomux.Context) bool {
 	return true
 }
 
-func (w cWiki) Settings() *disgomux.CommandSettings {
+func (c cWiki) Settings() *disgomux.CommandSettings {
 	return &disgomux.CommandSettings{
-		Command:  w.Command,
-		HelpText: w.HelpText,
+		Command:  c.Command,
+		HelpText: c.HelpText,
 	}
 }
 
-func (w cWiki) Permissions() *disgomux.CommandPermissions {
-	return &disgomux.CommandPermissions{
-		RoleIDs: config.permissions[w.Command],
-	}
+func (c cWiki) Permissions() *disgomux.CommandPermissions {
+	return &disgomux.CommandPermissions{}
 }
