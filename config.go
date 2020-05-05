@@ -10,6 +10,7 @@ import (
 type botConfig struct {
 	simpleCommands map[string]string
 	permissions    map[string][]string
+	errChan        string
 }
 
 func getConfig(path string) (*botConfig, error) {
@@ -28,9 +29,12 @@ func getConfig(path string) (*botConfig, error) {
 		return &botConfig{}, err
 	}
 
+	errChan := gjson.Get(json, "errorLogChannel")
+
 	return &botConfig{
 		simpleCommands: simpleCommands,
 		permissions:    permissions,
+		errChan:        errChan.String(),
 	}, nil
 }
 

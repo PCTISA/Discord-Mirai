@@ -37,6 +37,7 @@ func (d cDebug) Handle(ctx *disgomux.Context) {
 		d.stats(ctx)
 	default:
 		ctx.ChannelSend("Debug")
+		cmdIssue(ctx, nil, "Debug")
 	}
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -53,8 +54,16 @@ func arrayContains(array []string, value string, ignoreCase bool) bool {
 func cmdIssue(ctx *disgomux.Context, e error, msg string) {
 	cLog.WithError(e).WithField("command", ctx.Command).Error(msg)
 
+	/* Send to error message to designated channel. Not error handling here since
+	   errors thrown are effectivly meaningless */
+	channel, _ := ctx.Session.Channel(ctx.Message.ChannelID)
+	ctx.Session.ChannelMessageSend(config.errChan, fmt.Sprintf(
+		"**Error:**\n```Channel: %s\nCommand: %s\nError: %v\nMessage: %s```",
+		channel.Name, ctx.Command, e, msg,
+	))
+
 	if env.Debug {
-		ctx.ChannelSendf(msg+"\nError: `%s`", e.Error())
+		ctx.ChannelSendf("Error: Message: `%s`, Error Message: `%v`", msg, e)
 		return
 	}
 	ctx.ChannelSend(msg)
