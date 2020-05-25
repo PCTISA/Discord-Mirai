@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"encoding/json"
@@ -11,12 +11,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type (
-	cWiki struct {
-		Command  string
-		HelpText string
-	}
+// Wiki is a command
+// TODO: Make this a better description
+type Wiki struct {
+	Command  string
+	HelpText string
+}
 
+type (
 	articleInfo struct {
 		ID    int    `json:"id"`
 		Title string `json:"title"`
@@ -30,29 +32,30 @@ type (
 	}
 )
 
-const issueText = "Hmm... I seem to have run into an issue... Try again later?"
-
-func (c cWiki) Init(m *disgomux.Mux) {
+// Init is called by the multiplexer before the bot starts to initialize any
+// variables the command needs.
+func (c Wiki) Init(m *disgomux.Mux) {
 	// Nothing to init
 }
 
-func (c cWiki) Handle(ctx *disgomux.Context) {
+// Handle is called by the multiplexer whenever a user triggers the command.
+func (c Wiki) Handle(ctx *disgomux.Context) {
 	resp, err := http.Get("https://en.wikipedia.org/w/api.php?action=query&format=json&list=random&rnnamespace=0&rnlimit=2")
 	if err != nil {
-		cmdIssue(ctx, err, "Unable to get random wikipedia page")
+		commandLogs.CmdErr(ctx, err, "Unable to get random wikipedia page")
 		return
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		cmdIssue(ctx, err, "Unable to read page")
+		commandLogs.CmdErr(ctx, err, "Unable to read page")
 		return
 	}
 
 	var search wikiResult
 	err = json.Unmarshal(body, &search)
 	if err != nil {
-		cmdIssue(ctx, err, "Unable to unmarshal page")
+		commandLogs.CmdErr(ctx, err, "Unable to unmarshal page")
 		return
 	}
 
@@ -89,7 +92,10 @@ func (c cWiki) Handle(ctx *disgomux.Context) {
 		})
 }
 
-func (c cWiki) HandleHelp(ctx *disgomux.Context) bool {
+// HandleHelp is called by whatever help command is in place when a user enters
+// "!help [command name]". If the help command is not being handled, return
+// false.
+func (c Wiki) HandleHelp(ctx *disgomux.Context) bool {
 	var sb strings.Builder
 	sb.WriteString(
 		"Use `!wikirace` to start a new race! The rules are simple:\n",
@@ -102,13 +108,17 @@ func (c cWiki) HandleHelp(ctx *disgomux.Context) bool {
 	return true
 }
 
-func (c cWiki) Settings() *disgomux.CommandSettings {
+// Settings is called by the multiplexer on startup to process any settings
+// associated with that command.
+func (c Wiki) Settings() *disgomux.CommandSettings {
 	return &disgomux.CommandSettings{
 		Command:  c.Command,
 		HelpText: c.HelpText,
 	}
 }
 
-func (c cWiki) Permissions() *disgomux.CommandPermissions {
+// Permissions is called by the multiplexer on startup to collect the list of
+// permissions required to run the given command.
+func (c Wiki) Permissions() *disgomux.CommandPermissions {
 	return &disgomux.CommandPermissions{}
 }

@@ -1,3 +1,6 @@
+// This codebase has really turned into a disaster. It should really totally be
+// reworked... Eh, maybe someday
+
 package main
 
 import (
@@ -6,28 +9,28 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/PulseDevelopmentGroup/0x626f74/command"
+	"github.com/PulseDevelopmentGroup/0x626f74/config"
+	"github.com/PulseDevelopmentGroup/0x626f74/log"
+
 	"github.com/CS-5/disgomux"
+
 	"github.com/bwmarrin/discordgo"
 	goenv "github.com/caarlos0/env/v6"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/sirupsen/logrus"
 )
 
-type (
-	environment struct {
-		Token   string `env:"BOT_TOKEN"`
-		Debug   bool   `env:"DEBUG" envDefault:"false"`
-		DataDir string `env:"DATA_DIR" envDefault:"data/"`
-		Fuzzy   bool   `env:"USE_FUZZY" envDefault:"false"`
-	}
-)
+type environment struct {
+	Token   string `env:"BOT_TOKEN"`
+	Debug   bool   `env:"DEBUG" envDefault:"false"`
+	DataDir string `env:"DATA_DIR" envDefault:"data/"`
+	Fuzzy   bool   `env:"USE_FUZZY" envDefault:"false"`
+}
 
 var (
-	env    = environment{}
-	log    *logrus.Logger
-	cLog   *logrus.Entry // Log for commanbds
-	mLog   *logrus.Entry // Log for multiplexer
-	config *botConfig
+	env  = environment{}
+	cfg  *config.BotConfig
+	logs *log.Logs
 
 	prefix = "!"
 )
@@ -35,45 +38,38 @@ var (
 func init() {
 	/* Parse enviorment variables */
 	if err := goenv.Parse(&env); err != nil {
-		fmt.Printf("%+v\n", err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
-
-	/* Define logging setup */
-	log = initLogging(env.Debug)
 
 	/* Parse config */
 	var err error
-	config, err = getConfig(env.DataDir + "config.json")
+	cfg, err = config.Get(env.DataDir + "config.json")
 	if err != nil {
-		log.WithField("error", err).Error("Problem executing config command")
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	cLog = log.WithField("type", "command")
-	mLog = log.WithField("type", "multiplexer")
+	/* Define logging setup */
+	logs = log.New(env.Debug)
 }
 
 func main() {
 	/* Initialize DiscordGo */
-	log.Info("Starting Bot...")
+	logs.Primary.Info("Starting Bot...")
 	dg, err := discordgo.New("Bot " + env.Token)
 	if err != nil {
-		log.WithError(err).Error("Problem starting bot")
+		logs.Primary.WithError(err).Error("Problem starting bot")
 	}
-	log.Info("Bot started")
+	logs.Primary.Info("Bot started")
 
 	/* Initialize Mux */
 	dMux, err := disgomux.New(prefix)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to create multixplexer")
+		logs.Primary.WithError(err).Fatalf("Unable to create multixplexer")
 	}
 
-	/* Setup Logging */
-	logMW := &muxLog{
-		logAll:   env.Debug,
-		logEntry: mLog,
-	}
-
-	dMux.UseMiddleware(logMW.Logger)
+	dMux.UseMiddleware(logs.MuxMiddleware)
 
 	/* Setup Errors */
 	dMux.SetErrors(disgomux.ErrorTexts{
@@ -83,28 +79,30 @@ func main() {
 
 	/* === Register all the things === */
 
+	command.InitGlobals(cfg, logs)
+
 	dMux.Register(
-		cDebug{
+		command.Debug{
 			Command:  "debug",
 			HelpText: "Debuging info for bot-wranglers",
 		},
-		cWiki{
+		command.Wiki{
 			Command:  "wikirace",
 			HelpText: "Start a wikirace",
 		},
-		cGate{
+		command.Gatekeeper{
 			Command:  "role",
 			HelpText: "Manage your access to roles, and their related channels",
 		},
-		cHelp{
+		command.Help{
 			Command:  "help",
 			HelpText: "Displays help information regarding the bot's commands",
 		},
-		cInspire{
+		command.Inspire{
 			Command:  "inspire",
 			HelpText: "Get an inspirational quote from inspirobot.me (use at your own risk)",
 		},
-		cJPEG{
+		command.JPEG{
 			Command:  "jpeg",
 			HelpText: "More JPEG for the last image. 'nuff said",
 		},
@@ -124,11 +122,11 @@ func main() {
 	}
 
 	/* Register commands from the config file */
-	for k := range config.simpleCommands {
+	for k := range cfg.SimpleCommands {
 		k := k
 		dMux.RegisterSimple(disgomux.SimpleCommand{
 			Command:  k,
-			Content:  config.simpleCommands[k],
+			Content:  cfg.SimpleCommands[k],
 			HelpText: "This is a simple command",
 		})
 	}
@@ -140,13 +138,15 @@ func main() {
 
 	err = dg.Open()
 	if err != nil {
-		log.WithError(err).Error(
+		logs.Primary.WithError(err).Error(
 			"Problem opening websocket connection.",
 		)
 		return
 	}
 
+	idle := 0
 	dg.UpdateStatusComplex(discordgo.UpdateStatusData{
+		IdleSince: &idle,
 		Game: &discordgo.Game{
 			Name: "you",
 			Type: discordgo.GameTypeWatching,

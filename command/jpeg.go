@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"bytes"
@@ -12,7 +12,9 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-type cJPEG struct {
+// JPEG is a command
+// TODO: Make this a better description
+type JPEG struct {
 	Command  string
 	HelpText string
 }
@@ -23,11 +25,14 @@ var (
 	imgQuality    int     = 1
 )
 
-func (i cJPEG) Init(m *disgomux.Mux) {
+// Init is called by the multiplexer before the bot starts to initialize any
+// variables the command needs.
+func (c JPEG) Init(m *disgomux.Mux) {
 	// Nothing to init
 }
 
-func (i cJPEG) Handle(ctx *disgomux.Context) {
+// Handle is called by the multiplexer whenever a user triggers the command.
+func (c JPEG) Handle(ctx *disgomux.Context) {
 	var message *discordgo.Message
 
 	if len(ctx.Arguments) == 0 {
@@ -35,7 +40,7 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 			ctx.Message.ChannelID, 2, ctx.Message.ID, "", "",
 		)
 		if err != nil {
-			cmdIssue(ctx, err, "There was a problem getting the lastest messages")
+			commandLogs.CmdErr(ctx, err, "There was a problem getting the lastest messages")
 			return
 		}
 
@@ -68,14 +73,14 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 		strings.HasSuffix(attachment.ProxyURL, ".jpeg") {
 		req, err := http.Get(attachment.ProxyURL)
 		if err != nil {
-			cmdIssue(ctx, err, "There was a problem getting the attachment")
+			commandLogs.CmdErr(ctx, err, "There was a problem getting the attachment")
 			return
 		}
 		defer req.Body.Close()
 
 		imgIn, _, err := image.Decode(req.Body)
 		if err != nil {
-			cmdIssue(ctx, err, "There was a problem decoding the image")
+			commandLogs.CmdErr(ctx, err, "There was a problem decoding the image")
 			return
 		}
 
@@ -88,7 +93,7 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 			Quality: imgQuality,
 		})
 		if err != nil {
-			cmdIssue(ctx, err, "There was a problem endoding the image")
+			commandLogs.CmdErr(ctx, err, "There was a problem endoding the image")
 			return
 		}
 
@@ -102,18 +107,25 @@ func (i cJPEG) Handle(ctx *disgomux.Context) {
 	ctx.ChannelSend("No valid image to JPEGify (must be .jpg or .png)!")
 }
 
-func (i cJPEG) HandleHelp(ctx *disgomux.Context) bool {
+// HandleHelp is called by whatever help command is in place when a user enters
+// "!help [command name]". If the help command is not being handled, return
+// false.
+func (c JPEG) HandleHelp(ctx *disgomux.Context) bool {
 	ctx.ChannelSend("`!jpeg` to JPEGify the image that was just sent.\n`!jpeg [message ID]` to JPEGify a specific image in this channel.")
 	return true
 }
 
-func (i cJPEG) Settings() *disgomux.CommandSettings {
+// Settings is called by the multiplexer on startup to process any settings
+// associated with that command.
+func (c JPEG) Settings() *disgomux.CommandSettings {
 	return &disgomux.CommandSettings{
-		Command:  i.Command,
-		HelpText: i.HelpText,
+		Command:  c.Command,
+		HelpText: c.HelpText,
 	}
 }
 
-func (i cJPEG) Permissions() *disgomux.CommandPermissions {
+// Permissions is called by the multiplexer on startup to collect the list of
+// permissions required to run the given command.
+func (c JPEG) Permissions() *disgomux.CommandPermissions {
 	return &disgomux.CommandPermissions{}
 }

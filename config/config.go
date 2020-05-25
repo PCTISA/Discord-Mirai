@@ -1,45 +1,57 @@
-package main
+package config
 
 import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/PulseDevelopmentGroup/0x626f74/util"
 	"github.com/tidwall/gjson"
 )
 
-type botConfig struct {
-	simpleCommands map[string]string
-	permissions    map[string][]string
-	errChan        string
-}
+type (
+	// BotConfig defines the configuration container for the bot
+	BotConfig struct {
+		SimpleCommands map[string]string
+		Permissions    *BotPermissions
+	}
 
-func getConfig(path string) (*botConfig, error) {
+	// BotPermissions contains the permission maps for roles, channels, and
+	// users based on the config file.
+	BotPermissions struct {
+		RoleIDs map[string][]string
+		ChanIDs map[string][]string
+		UserIDs map[string][]string
+	}
+)
+
+// Get loads the config from the json file at the path specified
+func Get(path string) (*BotConfig, error) {
 	json, err := getJSON(path)
 	if err != nil {
-		return &botConfig{}, err
+		return &BotConfig{}, err
 	}
 
 	simpleCommands, err := getSimpleCommands(json)
 	if err != nil {
-		return &botConfig{}, err
+		return &BotConfig{}, err
 	}
 
-	permissions, err := getPermissions(json)
+	roles, err := getRoles(json)
 	if err != nil {
-		return &botConfig{}, err
+		return &BotConfig{}, err
 	}
 
-	errChan := gjson.Get(json, "errorLogChannel")
-
-	return &botConfig{
-		simpleCommands: simpleCommands,
-		permissions:    permissions,
-		errChan:        errChan.String(),
+	return &BotConfig{
+		SimpleCommands: simpleCommands,
+		Permissions: &BotPermissions{
+			RoleIDs: roles,
+		},
 	}, nil
 }
 
+// TODO: Support URLs
 func getJSON(path string) (string, error) {
-	file, err := initFile(path)
+	file, err := util.InitFile(path)
 	if err != nil {
 		return "", err
 	}
@@ -72,7 +84,7 @@ func getSimpleCommands(json string) (map[string]string, error) {
 }
 
 /* TODO: I feel like this function is really a disaster and needs a rework sometime */
-func getPermissions(json string) (map[string][]string, error) {
+func getRoles(json string) (map[string][]string, error) {
 	out := make(map[string][]string)
 
 	r := gjson.Get(json, "permissions")

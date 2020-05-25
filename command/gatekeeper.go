@@ -1,14 +1,16 @@
-package main
+package command
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/CS-5/disgomux"
+	"github.com/PulseDevelopmentGroup/0x626f74/util"
 )
 
-type cGate struct {
+// Gatekeeper is a command
+// TODO: Make this a better description
+type Gatekeeper struct {
 	Command  string
 	HelpText string
 }
@@ -18,18 +20,22 @@ const (
 	backendError   = "Backend error: `%q`"
 )
 
-func (g cGate) Init(m *disgomux.Mux) {
+// Init is called by the multiplexer before the bot starts to initialize any
+// variables the command needs.
+func (c Gatekeeper) Init(m *disgomux.Mux) {
 	// Nothing to init
 }
 
-func (g cGate) Handle(ctx *disgomux.Context) {
+// Handle is called by the multiplexer whenever a user triggers the command.
+func (c Gatekeeper) Handle(ctx *disgomux.Context) {
 	guildID := ctx.Message.GuildID
 	roles, err := ctx.Session.GuildRoles(guildID)
 	if err != nil {
-		cmdIssue(ctx, err, "There was a problem getting the roles of the guild")
+		commandLogs.CmdErr(ctx, err, "There was a problem getting the roles of the guild")
 		return
 	}
 
+	// TODO: The way this works should probably be re-evaluated
 	requestableRoles := make(map[string]string)
 	printNames := []string{}
 	for _, r := range roles {
@@ -74,7 +80,7 @@ func (g cGate) Handle(ctx *disgomux.Context) {
 	userID := ctx.Message.Author.ID
 	member, err := ctx.Session.GuildMember(ctx.Message.GuildID, userID)
 	if err != nil {
-		cmdIssue(ctx, err, "There was a problem getting the user id")
+		commandLogs.CmdErr(ctx, err, "There was a problem getting the user id")
 	}
 
 	/* Check to see if the requested role is valid */
@@ -89,7 +95,7 @@ func (g cGate) Handle(ctx *disgomux.Context) {
 	}
 
 	hasRole := false
-	if arrayContains(member.Roles, roleID, false) {
+	if util.ArrayContains(member.Roles, roleID, false) {
 		hasRole = true
 	}
 
@@ -124,42 +130,33 @@ func (g cGate) Handle(ctx *disgomux.Context) {
 	))
 }
 
-func (g cGate) HandleHelp(ctx *disgomux.Context) bool {
-	//TODO: Finish this
+// HandleHelp is called by whatever help command is in place when a user enters
+// "!help [command name]". If the help command is not being handled, return
+// false.
+func (c Gatekeeper) HandleHelp(ctx *disgomux.Context) bool {
+	ctx.ChannelSendf(
+		"This server has a number of opt-in roles common interests.\n\n"+
+			"To see a list of all available roles, use the `!%s` command. To "+
+			"join an opt-in, use the `!%s give [opt-in name]` command. To "+
+			"leave, use the `!%s take [opt-in name]` command.",
+		c.Command, c.Command, c.Command,
+	)
 	return false
 }
 
-func (g cGate) Settings() *disgomux.CommandSettings {
+// Settings is called by the multiplexer on startup to process any settings
+// associated with that command.
+func (c Gatekeeper) Settings() *disgomux.CommandSettings {
 	return &disgomux.CommandSettings{
-		Command:  g.Command,
-		HelpText: g.HelpText,
+		Command:  c.Command,
+		HelpText: c.HelpText,
 	}
 }
 
-func (g cGate) Permissions() *disgomux.CommandPermissions {
+// Permissions is called by the multiplexer on startup to collect the list of
+// permissions required to run the given command.
+func (c Gatekeeper) Permissions() *disgomux.CommandPermissions {
 	return &disgomux.CommandPermissions{
-		RoleIDs: config.permissions[g.Command],
+		RoleIDs: commandConfig.Permissions.RoleIDs[c.Command],
 	}
-}
-
-func idToName(ctx *disgomux.Context, id *string) (string, error) {
-	role, err := ctx.Session.State.Role(ctx.Message.GuildID, *id)
-	if err != nil {
-		return "", err
-	}
-	return role.Name, nil
-}
-
-func nameToID(ctx *disgomux.Context, name *string) (string, error) {
-	roles, err := ctx.Session.GuildRoles(ctx.Message.GuildID)
-	if err != nil {
-		return "", errors.New("Unable to fetch roles for this guild")
-	}
-
-	for _, r := range roles {
-		if strings.ToLower(r.Name) == *name {
-			return r.ID, nil
-		}
-	}
-	return "", fmt.Errorf("Role name '%s' does not exist", *name)
 }

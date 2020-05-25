@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"fmt"
@@ -7,7 +7,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type cHelp struct {
+// Help is a command
+// TODO: Make this a better description
+type Help struct {
 	Command  string
 	HelpText string
 }
@@ -17,7 +19,9 @@ var (
 	helpFields   []*discordgo.MessageEmbedField
 )
 
-func (h cHelp) Init(m *disgomux.Mux) {
+// Init is called by the multiplexer before the bot starts to initialize any
+// variables the command needs.
+func (c Help) Init(m *disgomux.Mux) {
 	i := 0
 	for k, v := range m.Commands {
 		msg := v.Settings().HelpText
@@ -36,12 +40,13 @@ func (h cHelp) Init(m *disgomux.Mux) {
 		i++
 	}
 
-	cLog.WithField("command", h.Command).Infof(
+	commandLogs.Command.WithField("command", c.Command).Infof(
 		"Loaded help handlers and messages for %d commands", i,
 	)
 }
 
-func (h cHelp) Handle(ctx *disgomux.Context) {
+// Handle is called by the multiplexer whenever a user triggers the command.
+func (c Help) Handle(ctx *disgomux.Context) {
 	if len(ctx.Arguments) == 0 {
 		ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
 			&discordgo.MessageEmbed{
@@ -65,18 +70,25 @@ func (h cHelp) Handle(ctx *disgomux.Context) {
 	command(ctx)
 }
 
-func (h cHelp) HandleHelp(ctx *disgomux.Context) bool {
+// HandleHelp is called by whatever help command is in place when a user enters
+// "!help [command name]". If the help command is not being handled, return
+// false.
+func (c Help) HandleHelp(ctx *disgomux.Context) bool {
 	ctx.ChannelSend("Are you sure _you_ don't need help?")
 	return true
 }
 
-func (h cHelp) Settings() *disgomux.CommandSettings {
+// Settings is called by the multiplexer on startup to process any settings
+// associated with that command.
+func (c Help) Settings() *disgomux.CommandSettings {
 	return &disgomux.CommandSettings{
-		Command:  h.Command,
-		HelpText: h.HelpText,
+		Command:  c.Command,
+		HelpText: c.HelpText,
 	}
 }
 
-func (h cHelp) Permissions() *disgomux.CommandPermissions {
+// Permissions is called by the multiplexer on startup to collect the list of
+// permissions required to run the given command.
+func (c Help) Permissions() *disgomux.CommandPermissions {
 	return &disgomux.CommandPermissions{}
 }
