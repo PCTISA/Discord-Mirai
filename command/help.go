@@ -1,7 +1,7 @@
 package command
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/CS-5/disgomux"
 	"github.com/bwmarrin/discordgo"
@@ -31,7 +31,8 @@ func (c Help) Init(m *disgomux.Mux) {
 			continue
 		}
 
-		helpHandlers[k] = v.HandleHelp
+		helpHandlers[strings.ToLower(k)] = v.HandleHelp
+
 		helpFields = append(helpFields, &discordgo.MessageEmbedField{
 			Name:   m.Prefix + k,
 			Value:  msg,
@@ -59,15 +60,18 @@ func (c Help) Handle(ctx *disgomux.Context) {
 		return
 	}
 
-	command, ok := helpHandlers[ctx.Arguments[0]]
+	cmd := strings.ToLower(ctx.Arguments[0])
+	handler, ok := helpHandlers[cmd]
 	if !ok {
-		ctx.ChannelSend(fmt.Sprintf(
-			"Unable to find help info for command `%s`", ctx.Arguments[0],
-		))
+		ctx.ChannelSendf("Unable to find help handler for command: %s", cmd)
 		return
 	}
 
-	command(ctx)
+	if !handler(ctx) {
+		ctx.ChannelSend(
+			"Help handler not specified... guess you're out of luck",
+		)
+	}
 }
 
 // HandleHelp is called by whatever help command is in place when a user enters
