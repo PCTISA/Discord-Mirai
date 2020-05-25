@@ -3,6 +3,8 @@ package util
 import (
 	"os"
 	"strings"
+
+	"github.com/CS-5/disgomux"
 )
 
 /* === Helpers === */
@@ -32,6 +34,29 @@ func ArrayContains(array []string, value string, ignoreCase bool) bool {
 		if e == value {
 			return true
 		}
+	}
+	return false
+}
+
+// CheckPermissions takes the user, role(s), and channel IDs and checks them
+// against the supplied permissions struct.
+// TODO: This should probably be moved as a utility function to the multiplexer?
+func CheckPermissions(
+	perms *disgomux.CommandPermissions,
+	userID string, roleIDs []string, chanID string,
+) bool {
+	if ArrayContains(perms.UserIDs, userID, true) {
+		return true
+	}
+
+	for _, id := range roleIDs {
+		if ArrayContains(perms.RoleIDs, id, true) {
+			return true
+		}
+	}
+
+	if ArrayContains(perms.ChanIDs, chanID, true) {
+		return true
 	}
 	return false
 }
