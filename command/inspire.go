@@ -16,8 +16,6 @@ import (
 type Inspire struct {
 	Command  string
 	HelpText string
-	Limit    int
-	users    map[string]int
 }
 
 // Init is called by the multiplexer before the bot starts to initialize any
