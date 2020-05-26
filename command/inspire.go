@@ -7,6 +7,7 @@ import (
 
 	"github.com/CS-5/disgoreact"
 	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/patrickmn/go-cache"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -16,6 +17,9 @@ import (
 type Inspire struct {
 	Command  string
 	HelpText string
+
+	RateLimitMax int
+	RateLimitDB  *cache.Cache
 }
 
 // Init is called by the multiplexer before the bot starts to initialize any
@@ -129,7 +133,9 @@ func (c Inspire) HandleHelp(ctx *multiplexer.Context) bool {
 // associated with that command.
 func (c Inspire) Settings() *multiplexer.CommandSettings {
 	return &multiplexer.CommandSettings{
-		Command:  c.Command,
-		HelpText: c.HelpText,
+		Command:      c.Command,
+		HelpText:     c.HelpText,
+		RateLimitMax: c.RateLimitMax,
+		RateLimitDB:  c.RateLimitDB,
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/PulseDevelopmentGroup/0x626f74/command"
 	"github.com/PulseDevelopmentGroup/0x626f74/config"
@@ -14,6 +15,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	goenv "github.com/caarlos0/env/v6"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/patrickmn/go-cache"
 )
 
 type environment struct {
@@ -29,7 +31,8 @@ var (
 	cfg  *config.BotConfig
 	logs *log.Logs
 
-	prefix = "!"
+	prefix        = "!"
+	rateLimitTime = 5 * time.Minute
 )
 
 func init() {
@@ -72,29 +75,32 @@ func main() {
 		logs.Primary.WithError(err).Fatalf("Unable to create multixplexer")
 	}
 
+	/* Use the logging middleware with the multiplexer */
 	mux.UseMiddleware(logs.MuxMiddleware)
 
 	/* Setup Errors */
-	mux.SetErrors(multiplexer.ErrorTexts{
+	mux.SetErrors(&multiplexer.ErrorTexts{
 		CommandNotFound: "Command not found.",
 		NoPermissions:   "You do not have permissions to execute that command.",
+		RateLimited:     "You've used this command too many times, wait a bit and try again.",
 	})
 
 	/* === Register all the things === */
 
-	// TODO: In theory, there are no problems here (since no writing is being
-	// performed). That said, there is a possible race condition using the same
-	// config and log pointers.. I think?
+	/* Initialize Global Variables */
 	command.InitGlobals(cfg, logs)
 
+	/* Register the commands with the multiplexer*/
 	mux.Register(
 		command.Debug{
 			Command:  "debug",
 			HelpText: "Debuging info for bot-wranglers",
 		},
 		command.Wiki{
-			Command:  "wikirace",
-			HelpText: "Start a wikirace",
+			Command:      "wikirace",
+			HelpText:     "Start a wikirace",
+			RateLimitMax: 3,
+			RateLimitDB:  cache.New(5*time.Minute, 5*time.Minute),
 		},
 		command.Gatekeeper{
 			Command:  "role",
@@ -102,11 +108,13 @@ func main() {
 		},
 		command.Help{
 			Command:  "help",
-			HelpText: "Displays help information regarding the bot's commands",
+			HelpText: "Displays help  information regarding the bot's commands",
 		},
 		command.Inspire{
-			Command:  "inspire",
-			HelpText: "Get an inspirational quote from inspirobot.me (use at your own risk)",
+			Command:      "inspire",
+			HelpText:     "Get an inspirational quote from inspirobot.me",
+			RateLimitMax: 3,
+			RateLimitDB:  cache.New(5*time.Minute, 5*time.Minute),
 		},
 		command.JPEG{
 			Command:  "jpeg",
@@ -114,6 +122,7 @@ func main() {
 		},
 	)
 
+	/* Configure multiplexer options */
 	mux.Options(&multiplexer.Options{
 		IgnoreDMs:        true,
 		IgnoreBots:       true,
@@ -121,10 +130,11 @@ func main() {
 		IgnoreEmpty:      true,
 	})
 
+	/* Initialize the commands */
 	mux.Initialize()
 
 	if env.Fuzzy {
-		mux.InitializeFuzzy()
+		mux.UseFuzzy()
 	}
 
 	/* Register commands from the config file */

@@ -9,6 +9,7 @@ import (
 
 	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 	"github.com/bwmarrin/discordgo"
+	"github.com/patrickmn/go-cache"
 )
 
 // Wiki is a command
@@ -16,6 +17,9 @@ import (
 type Wiki struct {
 	Command  string
 	HelpText string
+
+	RateLimitMax int
+	RateLimitDB  *cache.Cache
 }
 
 type (
@@ -112,7 +116,9 @@ func (c Wiki) HandleHelp(ctx *multiplexer.Context) bool {
 // associated with that command.
 func (c Wiki) Settings() *multiplexer.CommandSettings {
 	return &multiplexer.CommandSettings{
-		Command:  c.Command,
-		HelpText: c.HelpText,
+		Command:      c.Command,
+		HelpText:     c.HelpText,
+		RateLimitMax: c.RateLimitMax,
+		RateLimitDB:  c.RateLimitDB,
 	}
 }

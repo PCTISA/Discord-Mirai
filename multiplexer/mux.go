@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/PulseDevelopmentGroup/0x626f74/util"
+
 	"github.com/bwmarrin/discordgo"
+	"github.com/patrickmn/go-cache"
 	"github.com/sahilm/fuzzy"
 )
 
@@ -19,7 +21,7 @@ type (
 		options        *Options
 		fuzzyMatch     bool
 		commandNames   []string
-		errorTexts     ErrorTexts
+		errorTexts     *ErrorTexts
 	}
 
 	// Command specifies the functions for a multiplexed command
@@ -44,6 +46,9 @@ type (
 	CommandSettings struct {
 		Command, HelpText string
 		Permissions       *CommandPermissions
+
+		RateLimitMax int
+		RateLimitDB  *cache.Cache
 	}
 
 	// SimpleCommand contains the content and helptext of a logic-less command.
@@ -54,7 +59,7 @@ type (
 
 	// ErrorTexts holds strings used when an error occurs
 	ErrorTexts struct {
-		CommandNotFound, NoPermissions string
+		CommandNotFound, NoPermissions, RateLimited string
 	}
 
 	// Context is the contexual values supplied to middlewares and handlers
@@ -90,7 +95,7 @@ func New(prefix string) (*Mux, error) {
 		Commands:       make(map[string]Command),
 		SimpleCommands: make(map[string]SimpleCommand),
 		Middleware:     []Middleware{},
-		errorTexts: ErrorTexts{
+		errorTexts: &ErrorTexts{
 			CommandNotFound: "Command not found.",
 			NoPermissions:   "You do not have permission to use that command.",
 		},
@@ -106,13 +111,13 @@ func (m *Mux) Options(opt *Options) {
 }
 
 // UseMiddleware adds a middleware to the multiplexer. Middlewares are called
-// after a command is handled.
+// before a command is handled.
 func (m *Mux) UseMiddleware(mw Middleware) {
 	m.Middleware = append(m.Middleware, mw)
 }
 
 // SetErrors sets the error texts for the multiplexer using the supplied struct
-func (m *Mux) SetErrors(errorTexts ErrorTexts) {
+func (m *Mux) SetErrors(errorTexts *ErrorTexts) {
 	m.errorTexts = errorTexts
 }
 
@@ -136,9 +141,9 @@ func (m *Mux) RegisterSimple(simpleCommands ...SimpleCommand) {
 	}
 }
 
-// InitializeFuzzy both enables and builds a list of commands to fuzzy match
-// against. This _will_ mean taking a performance hit, so use with caution.
-func (m *Mux) InitializeFuzzy() {
+// UseFuzzy both enables and builds a list of commands to fuzzy match
+// against. May result in a small performance hit
+func (m *Mux) UseFuzzy() {
 	m.fuzzyMatch = true
 
 	for k := range m.Commands {
@@ -149,24 +154,16 @@ func (m *Mux) InitializeFuzzy() {
 // Initialize calls the init functions of all registered commands to do any
 // preloading or setup before commands are to be handled. Must be called before
 // Mux.Handle() and after Mux.Register()
-func (m *Mux) Initialize(commands ...Command) {
+func (m *Mux) Initialize() {
 	/* If no commands are loaded, and none are specified, return */
-	if len(commands) == 0 && len(m.Commands) == 0 {
+	if len(m.Commands) == 0 {
 		return
 	}
 
-	/* If no commands are specified, init the loaded ones */
-	if len(commands) == 0 {
-		for _, c := range m.Commands {
-			c.Init(m)
-		}
-		return
-	}
-
-	/* Init the specified commands */
-	for _, c := range commands {
+	for _, c := range m.Commands {
 		c.Init(m)
 	}
+	return
 }
 
 // Handle is passed to DiscordGo to handle actions
@@ -216,6 +213,7 @@ func (m *Mux) Handle(
 	}
 
 	handler, ok := m.Commands[command]
+	/* If command does not exist, attempt to fuzzy match it */
 	if !ok {
 		if m.fuzzyMatch {
 			var sb strings.Builder
@@ -244,6 +242,8 @@ func (m *Mux) Handle(
 		return
 	}
 
+	/* Form context */
+	settings := handler.Settings()
 	ctx := &Context{
 		Prefix:    m.Prefix,
 		Command:   command,
@@ -252,6 +252,12 @@ func (m *Mux) Handle(
 		Message:   message,
 	}
 
+	if !settings.checkLimit(message.Author.ID) {
+		ctx.ChannelSend(m.errorTexts.RateLimited)
+		return
+	}
+
+	// TODO: Move away from middlewares and more closely integrate logging
 	/* Call middlewares */
 	if len(m.Middleware) > 0 {
 		for _, mw := range m.Middleware {
@@ -260,32 +266,57 @@ func (m *Mux) Handle(
 	}
 
 	/* If permissions have been specified, check them */
-	p := handler.Settings().Permissions
+	p := settings.Permissions
 	if p != nil {
 		member, err := session.GuildMember(message.GuildID, message.Author.ID)
 		if err != nil {
-			session.ChannelMessageSend(
-				message.ChannelID,
-				"There was a weird issue. Maybe report it on Github?",
-			)
+			ctx.ChannelSend("There was a weird issue.")
 			return
 		}
 
 		/* Check the permissions struct against the context */
-		if CheckPermissions(
+		if !CheckPermissions(
 			p, member.User.ID, member.Roles, message.ChannelID,
 		) {
-			go handler.Handle(ctx)
+			/* The user doesn't have the correct permissions */
+			ctx.ChannelSend(m.errorTexts.NoPermissions)
 			return
 		}
-
-		/* The user doesn't have the correct permissions */
-		session.ChannelMessageSend(
-			message.ChannelID, m.errorTexts.NoPermissions,
-		)
-		return
 	}
+
+	/* User has permissions or it doesnt require them? Run it */
 	go handler.Handle(ctx)
+}
+
+/* === Helper Functions === */
+
+// checkLimit checks the supplied command settings' rate limiter to see if
+// the user is allowed to run the command.
+func (cs *CommandSettings) checkLimit(id string) bool {
+	/* No rate limiter set? Ignore */
+	if cs.RateLimitDB == nil {
+		return true
+	}
+
+	/* Increment limiter. Does not increase elements which do not exist */
+	cs.RateLimitDB.IncrementInt(id, 1)
+
+	uses, found := cs.RateLimitDB.Get(id)
+
+	fmt.Printf("%v %v\n", uses, found)
+
+	/* If not found, initialize */
+	if !found {
+		cs.RateLimitDB.SetDefault(id, 1)
+		return true
+	}
+
+	/* Check uses (add 1 since we've incremented the value) */
+	if uses.(int) < cs.RateLimitMax+1 {
+		return true
+	}
+
+	return false
 }
 
 // ChannelSend is a helper function for easily sending a message to the current
