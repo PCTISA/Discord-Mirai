@@ -302,9 +302,6 @@ func (cs *CommandSettings) checkLimit(id string) bool {
 	cs.RateLimitDB.IncrementInt(id, 1)
 
 	uses, found := cs.RateLimitDB.Get(id)
-
-	fmt.Printf("%v %v\n", uses, found)
-
 	/* If not found, initialize */
 	if !found {
 		cs.RateLimitDB.SetDefault(id, 1)
