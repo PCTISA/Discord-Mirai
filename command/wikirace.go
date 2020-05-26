@@ -116,9 +116,3 @@ func (c Wiki) Settings() *multiplexer.CommandSettings {
 		HelpText: c.HelpText,
 	}
 }
-
-// Permissions is called by the multiplexer on startup to collect the list of
-// permissions required to run the given command.
-func (c Wiki) Permissions() *multiplexer.CommandPermissions {
-	return &multiplexer.CommandPermissions{}
-}

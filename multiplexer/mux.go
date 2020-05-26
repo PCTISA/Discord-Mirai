@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/PulseDevelopmentGroup/0x626f74/util"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sahilm/fuzzy"
 )
@@ -27,7 +28,6 @@ type (
 		Handle(ctx *Context)
 		HandleHelp(ctx *Context) bool
 		Settings() *CommandSettings
-		Permissions() *CommandPermissions
 	}
 
 	// CommandPermissions holds permissions for a given command in whitelist
@@ -43,6 +43,7 @@ type (
 	// know.
 	CommandSettings struct {
 		Command, HelpText string
+		Permissions       *CommandPermissions
 	}
 
 	// SimpleCommand contains the content and helptext of a logic-less command.
@@ -104,7 +105,8 @@ func (m *Mux) Options(opt *Options) {
 	m.options = opt
 }
 
-// UseMiddleware adds a middleware to the multiplexer. //TODO: Improve this desc
+// UseMiddleware adds a middleware to the multiplexer. Middlewares are called
+// after a command is handled.
 func (m *Mux) UseMiddleware(mw Middleware) {
 	m.Middleware = append(m.Middleware, mw)
 }
@@ -183,7 +185,8 @@ func (m *Mux) Handle(
 	}
 
 	/* Ignore if the message is not default */
-	if m.options.IgnoreNonDefault && message.Type != discordgo.MessageTypeDefault {
+	if m.options.IgnoreNonDefault &&
+		message.Type != discordgo.MessageTypeDefault {
 		return
 	}
 
@@ -256,8 +259,9 @@ func (m *Mux) Handle(
 		}
 	}
 
-	p := handler.Permissions()
-	if len(p.RoleIDs) != 0 {
+	/* If permissions have been specified, check them */
+	p := handler.Settings().Permissions
+	if p != nil {
 		member, err := session.GuildMember(message.GuildID, message.Author.ID)
 		if err != nil {
 			session.ChannelMessageSend(
@@ -267,27 +271,15 @@ func (m *Mux) Handle(
 			return
 		}
 
-		/* Check if user explicitly has permission */
-		if arrayContains(p.UserIDs, member.User.ID) {
+		/* Check the permissions struct against the context */
+		if CheckPermissions(
+			p, member.User.ID, member.Roles, message.ChannelID,
+		) {
 			go handler.Handle(ctx)
 			return
 		}
 
-		/* Check if one of the user's roles has permission */
-		for _, r := range member.Roles {
-			if arrayContains(p.RoleIDs, r) {
-				go handler.Handle(ctx)
-				return
-			}
-		}
-
-		/* Check if the channel has permission */
-		if arrayContains(p.ChanIDs, message.ChannelID) {
-			go handler.Handle(ctx)
-			return
-		}
-
-		/* Clearly the user doesn't have the correct permissions */
+		/* The user doesn't have the correct permissions */
 		session.ChannelMessageSend(
 			message.ChannelID, m.errorTexts.NoPermissions,
 		)
@@ -313,11 +305,24 @@ func (ctx *Context) ChannelSendf(
 	)
 }
 
-func arrayContains(array []string, value string) bool {
-	for _, e := range array {
-		if e == value {
+// CheckPermissions takes the user, role(s), and channel IDs and checks them
+// against the supplied permissions struct.
+func CheckPermissions(
+	perms *CommandPermissions,
+	userID string, roleIDs []string, chanID string,
+) bool {
+	if util.ArrayContains(perms.UserIDs, userID, true) {
+		return true
+	}
+
+	for _, id := range roleIDs {
+		if util.ArrayContains(perms.RoleIDs, id, true) {
 			return true
 		}
+	}
+
+	if util.ArrayContains(perms.ChanIDs, chanID, true) {
+		return true
 	}
 	return false
 }
