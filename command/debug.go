@@ -30,7 +30,6 @@ func (c Debug) Handle(ctx *multiplexer.Context) {
 
 	switch strings.ToLower(ctx.Arguments[0]) {
 	case "config":
-
 		var sb strings.Builder
 		sb.WriteString(
 			fmt.Sprintf("`Simple Commands: %+v`\n\n", commandConfig.SimpleCommands))

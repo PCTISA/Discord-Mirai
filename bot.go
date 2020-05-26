@@ -88,6 +88,8 @@ func main() {
 	/* === Register all the things === */
 
 	/* Initialize Global Variables */
+	// TODO: Do away with this. Permissions should be handled at the reg level
+	// level and the CmdErr function could be moved to the command package.
 	command.InitGlobals(cfg, logs)
 
 	/* Register the commands with the multiplexer*/
