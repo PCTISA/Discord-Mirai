@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/jpeg"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/CS-5/disgomux"
@@ -23,6 +24,8 @@ var (
 	imgSaturation float64 = 100
 	imgBlur       float64 = 3
 	imgQuality    int     = 1
+
+	reURL = regexp.MustCompile(`(http(s?):)([/|.|\w|\s|-])*\.(?:jpg|jpeg|png)`)
 )
 
 // Init is called by the multiplexer before the bot starts to initialize any
@@ -40,7 +43,9 @@ func (c JPEG) Handle(ctx *disgomux.Context) {
 			ctx.Message.ChannelID, 2, ctx.Message.ID, "", "",
 		)
 		if err != nil {
-			commandLogs.CmdErr(ctx, err, "There was a problem getting the lastest messages")
+			commandLogs.CmdErr(
+				ctx, err, "There was a problem getting the lastest messages",
+			)
 			return
 		}
 
@@ -62,25 +67,40 @@ func (c JPEG) Handle(ctx *disgomux.Context) {
 		}
 	}
 
+	var urls []string
 	if len(message.Attachments) == 0 || message.Attachments[0] == nil {
-		ctx.ChannelSend("That message doesn't have any attachments!")
+		urls = reURL.FindAllString(message.Content, -1)
+	} else {
+		for _, attach := range message.Attachments {
+			if strings.HasSuffix(attach.ProxyURL, ".png") ||
+				strings.HasSuffix(attach.ProxyURL, ".jpg") ||
+				strings.HasSuffix(attach.ProxyURL, ".jpeg") {
+				urls = append(urls, attach.ProxyURL)
+			}
+		}
+	}
+
+	if len(urls) == 0 {
+		ctx.ChannelSend("No valid image to JPEGify (must be .jpg or .png)!")
 		return
 	}
 
-	attachment := message.Attachments[0]
-	if strings.HasSuffix(attachment.ProxyURL, ".png") ||
-		strings.HasSuffix(attachment.ProxyURL, ".jpg") ||
-		strings.HasSuffix(attachment.ProxyURL, ".jpeg") {
-		req, err := http.Get(attachment.ProxyURL)
+	ctx.Session.ChannelTyping(message.ChannelID)
+	for _, url := range urls {
+		req, err := http.Get(url)
 		if err != nil {
-			commandLogs.CmdErr(ctx, err, "There was a problem getting the attachment")
+			commandLogs.CmdErr(
+				ctx, err, "There was a problem getting the attachment",
+			)
 			return
 		}
 		defer req.Body.Close()
 
 		imgIn, _, err := image.Decode(req.Body)
 		if err != nil {
-			commandLogs.CmdErr(ctx, err, "There was a problem decoding the image")
+			commandLogs.CmdErr(
+				ctx, err, "There was a problem decoding the image",
+			)
 			return
 		}
 
@@ -93,25 +113,28 @@ func (c JPEG) Handle(ctx *disgomux.Context) {
 			Quality: imgQuality,
 		})
 		if err != nil {
-			commandLogs.CmdErr(ctx, err, "There was a problem endoding the image")
+			commandLogs.CmdErr(
+				ctx, err, "There was a problem endoding the image",
+			)
 			return
 		}
 
 		ctx.Session.ChannelFileSend(
 			ctx.Message.ChannelID,
-			attachment.Filename,
+			"compressed.jpeg",
 			&buf,
 		)
-		return
 	}
-	ctx.ChannelSend("No valid image to JPEGify (must be .jpg or .png)!")
 }
 
 // HandleHelp is called by whatever help command is in place when a user enters
 // "!help [command name]". If the help command is not being handled, return
 // false.
 func (c JPEG) HandleHelp(ctx *disgomux.Context) bool {
-	ctx.ChannelSend("`!jpeg` to JPEGify the image that was just sent.\n`!jpeg [message ID]` to JPEGify a specific image in this channel.")
+	ctx.ChannelSend(
+		"`!jpeg` to JPEGify the image that was just sent.\n" +
+			"`!jpeg [message ID]` to JPEGify a specific image in this channel.",
+	)
 	return true
 }
 
