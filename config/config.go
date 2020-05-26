@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/PulseDevelopmentGroup/0x626f74/util"
 	"github.com/tidwall/gjson"
@@ -49,16 +50,30 @@ func Get(path string) (*BotConfig, error) {
 	}, nil
 }
 
-// TODO: Support URLs
 func getJSON(path string) (string, error) {
-	file, err := util.InitFile(path)
-	if err != nil {
-		return "", err
-	}
+	var json []byte
 
-	json, err := ioutil.ReadFile(file.Name())
-	if err != nil {
-		return "", err
+	if !util.IsURL(path) {
+		file, err := util.InitFile(path)
+		if err != nil {
+			return "", err
+		}
+
+		json, err = ioutil.ReadFile(file.Name())
+		if err != nil {
+			return "", err
+		}
+	} else {
+		resp, err := http.Get(path)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		json, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return string(json), nil

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"net/url"
 	"os"
 	"strings"
 
@@ -59,4 +60,19 @@ func CheckPermissions(
 		return true
 	}
 	return false
+}
+
+// IsURL checks the provided string to see if it's a valid URL.
+func IsURL(test string) bool {
+	_, err := url.ParseRequestURI(test)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(test)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }

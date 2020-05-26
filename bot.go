@@ -1,6 +1,3 @@
-// This codebase has really turned into a disaster. It should really totally be
-// reworked... Eh, maybe someday
-
 package main
 
 import (
@@ -21,10 +18,11 @@ import (
 )
 
 type environment struct {
-	Token   string `env:"BOT_TOKEN"`
-	Debug   bool   `env:"DEBUG" envDefault:"false"`
-	DataDir string `env:"DATA_DIR" envDefault:"data/"`
-	Fuzzy   bool   `env:"USE_FUZZY" envDefault:"false"`
+	Token     string `env:"BOT_TOKEN"`
+	Debug     bool   `env:"DEBUG" envDefault:"false"`
+	DataDir   string `env:"DATA_DIR" envDefault:"data/"`
+	ConfigURL string `env:"CONFIG_URL"`
+	Fuzzy     bool   `env:"USE_FUZZY" envDefault:"false"`
 }
 
 var (
@@ -42,9 +40,15 @@ func init() {
 		os.Exit(1)
 	}
 
+	/* Check if URL is being specified */
+	path := env.DataDir + "config.json"
+	if len(env.ConfigURL) > 0 {
+		path = env.ConfigURL
+	}
+
 	/* Parse config */
 	var err error
-	cfg, err = config.Get(env.DataDir + "config.json")
+	cfg, err = config.Get(path)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -79,6 +83,9 @@ func main() {
 
 	/* === Register all the things === */
 
+	// TODO: In theory, there are no problems here (since no writing is being
+	// performed). That said, there is a possible race condition using the same
+	// config and log pointers.. I think?
 	command.InitGlobals(cfg, logs)
 
 	dMux.Register(
