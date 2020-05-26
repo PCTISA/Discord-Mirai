@@ -3,7 +3,7 @@ package log
 import (
 	"os"
 
-	"github.com/CS-5/disgomux"
+	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 	"github.com/sirupsen/logrus"
 )
 
@@ -44,7 +44,7 @@ func New(debug bool) *Logs {
 // CmdErr is used for handling errors within commands which should be reported
 // to the user. Takes a multiplexer context, error message, and user-readable
 // message which are sent to the channel where the command was executed.
-func (l *Logs) CmdErr(ctx *disgomux.Context, err error, msg string) {
+func (l *Logs) CmdErr(ctx *multiplexer.Context, err error, msg string) {
 	ctx.ChannelSendf(
 		"%s Maybe :at: Carson or Josiah?\nError:```%s```", msg, err.Error(),
 	)
@@ -53,7 +53,7 @@ func (l *Logs) CmdErr(ctx *disgomux.Context, err error, msg string) {
 
 // MuxMiddleware is the middleware function attached to MuxLog. Accepts the context
 // from disgomux.
-func (l *Logs) MuxMiddleware(ctx *disgomux.Context) {
+func (l *Logs) MuxMiddleware(ctx *multiplexer.Context) {
 	if l.debug {
 		// Ignoring errors here since they're effectivly meaningless
 		ch, _ := ctx.Session.Channel(ctx.Message.ChannelID)

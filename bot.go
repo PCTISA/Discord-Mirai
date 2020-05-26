@@ -9,8 +9,7 @@ import (
 	"github.com/PulseDevelopmentGroup/0x626f74/command"
 	"github.com/PulseDevelopmentGroup/0x626f74/config"
 	"github.com/PulseDevelopmentGroup/0x626f74/log"
-
-	"github.com/CS-5/disgomux"
+	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 
 	"github.com/bwmarrin/discordgo"
 	goenv "github.com/caarlos0/env/v6"
@@ -68,15 +67,15 @@ func main() {
 	logs.Primary.Info("Bot started")
 
 	/* Initialize Mux */
-	dMux, err := disgomux.New(prefix)
+	mux, err := multiplexer.New(prefix)
 	if err != nil {
 		logs.Primary.WithError(err).Fatalf("Unable to create multixplexer")
 	}
 
-	dMux.UseMiddleware(logs.MuxMiddleware)
+	mux.UseMiddleware(logs.MuxMiddleware)
 
 	/* Setup Errors */
-	dMux.SetErrors(disgomux.ErrorTexts{
+	mux.SetErrors(multiplexer.ErrorTexts{
 		CommandNotFound: "Command not found.",
 		NoPermissions:   "You do not have permissions to execute that command.",
 	})
@@ -88,7 +87,7 @@ func main() {
 	// config and log pointers.. I think?
 	command.InitGlobals(cfg, logs)
 
-	dMux.Register(
+	mux.Register(
 		command.Debug{
 			Command:  "debug",
 			HelpText: "Debuging info for bot-wranglers",
@@ -115,23 +114,23 @@ func main() {
 		},
 	)
 
-	dMux.Options(&disgomux.Options{
+	mux.Options(&multiplexer.Options{
 		IgnoreDMs:        true,
 		IgnoreBots:       true,
 		IgnoreNonDefault: true,
 		IgnoreEmpty:      true,
 	})
 
-	dMux.Initialize()
+	mux.Initialize()
 
 	if env.Fuzzy {
-		dMux.InitializeFuzzy()
+		mux.InitializeFuzzy()
 	}
 
 	/* Register commands from the config file */
 	for k := range cfg.SimpleCommands {
 		k := k
-		dMux.RegisterSimple(disgomux.SimpleCommand{
+		mux.RegisterSimple(multiplexer.SimpleCommand{
 			Command:  k,
 			Content:  cfg.SimpleCommands[k],
 			HelpText: "This is a simple command",
@@ -141,7 +140,7 @@ func main() {
 	/* === End Register === */
 
 	/* Handle commands and start DiscordGo */
-	dg.AddHandler(dMux.Handle)
+	dg.AddHandler(mux.Handle)
 
 	err = dg.Open()
 	if err != nil {

@@ -3,7 +3,7 @@ package command
 import (
 	"strings"
 
-	"github.com/CS-5/disgomux"
+	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -15,13 +15,13 @@ type Help struct {
 }
 
 var (
-	helpHandlers = make(map[string]func(ctx *disgomux.Context) bool)
+	helpHandlers = make(map[string]func(ctx *multiplexer.Context) bool)
 	helpFields   []*discordgo.MessageEmbedField
 )
 
 // Init is called by the multiplexer before the bot starts to initialize any
 // variables the command needs.
-func (c Help) Init(m *disgomux.Mux) {
+func (c Help) Init(m *multiplexer.Mux) {
 	i := 0
 	for k, v := range m.Commands {
 		msg := v.Settings().HelpText
@@ -47,7 +47,7 @@ func (c Help) Init(m *disgomux.Mux) {
 }
 
 // Handle is called by the multiplexer whenever a user triggers the command.
-func (c Help) Handle(ctx *disgomux.Context) {
+func (c Help) Handle(ctx *multiplexer.Context) {
 	if len(ctx.Arguments) == 0 {
 		ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
 			&discordgo.MessageEmbed{
@@ -77,15 +77,15 @@ func (c Help) Handle(ctx *disgomux.Context) {
 // HandleHelp is called by whatever help command is in place when a user enters
 // "!help [command name]". If the help command is not being handled, return
 // false.
-func (c Help) HandleHelp(ctx *disgomux.Context) bool {
+func (c Help) HandleHelp(ctx *multiplexer.Context) bool {
 	ctx.ChannelSend("Are you sure _you_ don't need help?")
 	return true
 }
 
 // Settings is called by the multiplexer on startup to process any settings
 // associated with that command.
-func (c Help) Settings() *disgomux.CommandSettings {
-	return &disgomux.CommandSettings{
+func (c Help) Settings() *multiplexer.CommandSettings {
+	return &multiplexer.CommandSettings{
 		Command:  c.Command,
 		HelpText: c.HelpText,
 	}
@@ -93,6 +93,6 @@ func (c Help) Settings() *disgomux.CommandSettings {
 
 // Permissions is called by the multiplexer on startup to collect the list of
 // permissions required to run the given command.
-func (c Help) Permissions() *disgomux.CommandPermissions {
-	return &disgomux.CommandPermissions{}
+func (c Help) Permissions() *multiplexer.CommandPermissions {
+	return &multiplexer.CommandPermissions{}
 }

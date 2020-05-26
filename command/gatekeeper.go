@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/CS-5/disgomux"
+	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 	"github.com/PulseDevelopmentGroup/0x626f74/util"
 )
 
@@ -22,12 +22,12 @@ const (
 
 // Init is called by the multiplexer before the bot starts to initialize any
 // variables the command needs.
-func (c Gatekeeper) Init(m *disgomux.Mux) {
+func (c Gatekeeper) Init(m *multiplexer.Mux) {
 	// Nothing to init
 }
 
 // Handle is called by the multiplexer whenever a user triggers the command.
-func (c Gatekeeper) Handle(ctx *disgomux.Context) {
+func (c Gatekeeper) Handle(ctx *multiplexer.Context) {
 	guildID := ctx.Message.GuildID
 	roles, err := ctx.Session.GuildRoles(guildID)
 	if err != nil {
@@ -133,7 +133,7 @@ func (c Gatekeeper) Handle(ctx *disgomux.Context) {
 // HandleHelp is called by whatever help command is in place when a user enters
 // "!help [command name]". If the help command is not being handled, return
 // false.
-func (c Gatekeeper) HandleHelp(ctx *disgomux.Context) bool {
+func (c Gatekeeper) HandleHelp(ctx *multiplexer.Context) bool {
 	ctx.ChannelSendf(
 		"This server has a number of opt-in roles common interests.\n\n"+
 			"To see a list of all available roles, use the `!%s` command. To "+
@@ -146,8 +146,8 @@ func (c Gatekeeper) HandleHelp(ctx *disgomux.Context) bool {
 
 // Settings is called by the multiplexer on startup to process any settings
 // associated with that command.
-func (c Gatekeeper) Settings() *disgomux.CommandSettings {
-	return &disgomux.CommandSettings{
+func (c Gatekeeper) Settings() *multiplexer.CommandSettings {
+	return &multiplexer.CommandSettings{
 		Command:  c.Command,
 		HelpText: c.HelpText,
 	}
@@ -155,8 +155,8 @@ func (c Gatekeeper) Settings() *disgomux.CommandSettings {
 
 // Permissions is called by the multiplexer on startup to collect the list of
 // permissions required to run the given command.
-func (c Gatekeeper) Permissions() *disgomux.CommandPermissions {
-	return &disgomux.CommandPermissions{
+func (c Gatekeeper) Permissions() *multiplexer.CommandPermissions {
+	return &multiplexer.CommandPermissions{
 		RoleIDs: commandConfig.Permissions.RoleIDs[c.Command],
 	}
 }

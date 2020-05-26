@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/CS-5/disgomux"
+	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 )
 
 /* === Helpers === */
@@ -43,7 +43,7 @@ func ArrayContains(array []string, value string, ignoreCase bool) bool {
 // against the supplied permissions struct.
 // TODO: This should probably be moved as a utility function to the multiplexer?
 func CheckPermissions(
-	perms *disgomux.CommandPermissions,
+	perms *multiplexer.CommandPermissions,
 	userID string, roleIDs []string, chanID string,
 ) bool {
 	if ArrayContains(perms.UserIDs, userID, true) {
