@@ -4,7 +4,8 @@ RUN apk add --no-cache git gcc g++
 ENV CGO_ENABLED=1
 ENV GOOS=linux
 WORKDIR /app
-COPY *.go go.mod go.sum ./
+#COPY *.go go.mod go.sum ./
+COPY . .
 RUN go build -o zeroxsix .
 
 # Build Docker Image
