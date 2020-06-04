@@ -122,6 +122,12 @@ func main() {
 			Command:  "jpeg",
 			HelpText: "More JPEG for the last image. 'nuff said",
 		},
+		command.LMGTFY{
+			Command:      "googlehelp",
+			HelpText:     "In case someone isn't familiar with Google",
+			RateLimitMax: 2,
+			RateLimitDB:  cache.New(30*time.Minute, 30*time.Minute),
+		},
 	)
 
 	/* Configure multiplexer options */
