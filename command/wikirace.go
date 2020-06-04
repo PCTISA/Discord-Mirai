@@ -1,4 +1,4 @@
-package main
+package command
 
 import (
 	"encoding/json"
@@ -7,16 +7,22 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CS-5/disgomux"
+	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 	"github.com/bwmarrin/discordgo"
+	"github.com/patrickmn/go-cache"
 )
 
-type (
-	cWiki struct {
-		Command  string
-		HelpText string
-	}
+// Wiki is a command
+// TODO: Make this a better description
+type Wiki struct {
+	Command  string
+	HelpText string
 
+	RateLimitMax int
+	RateLimitDB  *cache.Cache
+}
+
+type (
 	articleInfo struct {
 		ID    int    `json:"id"`
 		Title string `json:"title"`
@@ -30,29 +36,30 @@ type (
 	}
 )
 
-const issueText = "Hmm... I seem to have run into an issue... Try again later?"
-
-func (w cWiki) Init(m *disgomux.Mux) {
+// Init is called by the multiplexer before the bot starts to initialize any
+// variables the command needs.
+func (c Wiki) Init(m *multiplexer.Mux) {
 	// Nothing to init
 }
 
-func (w cWiki) Handle(ctx *disgomux.Context) {
+// Handle is called by the multiplexer whenever a user triggers the command.
+func (c Wiki) Handle(ctx *multiplexer.Context) {
 	resp, err := http.Get("https://en.wikipedia.org/w/api.php?action=query&format=json&list=random&rnnamespace=0&rnlimit=2")
 	if err != nil {
-		cmdIssue(ctx, err, "Unable to get random wikipedia page")
+		commandLogs.CmdErr(ctx, err, "Unable to get random wikipedia page")
 		return
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		cmdIssue(ctx, err, "Unable to read page")
+		commandLogs.CmdErr(ctx, err, "Unable to read page")
 		return
 	}
 
 	var search wikiResult
 	err = json.Unmarshal(body, &search)
 	if err != nil {
-		cmdIssue(ctx, err, "Unable to unmarshal page")
+		commandLogs.CmdErr(ctx, err, "Unable to unmarshal page")
 		return
 	}
 
@@ -65,7 +72,7 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 			Color:       0x0080ff,
 			Description: "Start at the start and use only blue links in the article to get to the end page!",
 			Fields: []*discordgo.MessageEmbedField{
-				&discordgo.MessageEmbedField{
+				{
 					Name: "Start:vertical_traffic_light:",
 					Value: fmt.Sprintf(
 						"[%s](%s%d)",
@@ -75,7 +82,7 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 					),
 					Inline: false,
 				},
-				&discordgo.MessageEmbedField{
+				{
 					Name: "End :checkered_flag:",
 					Value: fmt.Sprintf(
 						"[%s](%s%d)",
@@ -89,7 +96,10 @@ func (w cWiki) Handle(ctx *disgomux.Context) {
 		})
 }
 
-func (w cWiki) HandleHelp(ctx *disgomux.Context) bool {
+// HandleHelp is called by whatever help command is in place when a user enters
+// "!help [command name]". If the help command is not being handled, return
+// false.
+func (c Wiki) HandleHelp(ctx *multiplexer.Context) bool {
 	var sb strings.Builder
 	sb.WriteString(
 		"Use `!wikirace` to start a new race! The rules are simple:\n",
@@ -102,15 +112,13 @@ func (w cWiki) HandleHelp(ctx *disgomux.Context) bool {
 	return true
 }
 
-func (w cWiki) Settings() *disgomux.CommandSettings {
-	return &disgomux.CommandSettings{
-		Command:  w.Command,
-		HelpText: w.HelpText,
-	}
-}
-
-func (w cWiki) Permissions() *disgomux.CommandPermissions {
-	return &disgomux.CommandPermissions{
-		RoleIDs: config.permissions[w.Command],
+// Settings is called by the multiplexer on startup to process any settings
+// associated with that command.
+func (c Wiki) Settings() *multiplexer.CommandSettings {
+	return &multiplexer.CommandSettings{
+		Command:      c.Command,
+		HelpText:     c.HelpText,
+		RateLimitMax: c.RateLimitMax,
+		RateLimitDB:  c.RateLimitDB,
 	}
 }
