@@ -339,6 +339,11 @@ func CheckPermissions(
 	perms *CommandPermissions,
 	userID string, roleIDs []string, chanID string,
 ) bool {
+	// TODO: Fix this gnarly logic
+	if len(perms.UserIDs) == 0 && len(perms.RoleIDs) == 0 && len(perms.ChanIDs) == 0 {
+		return true
+	}
+
 	if util.ArrayContains(perms.UserIDs, userID, true) {
 		return true
 	}
