@@ -46,20 +46,20 @@ func (c Wiki) Init(m *multiplexer.Mux) {
 func (c Wiki) Handle(ctx *multiplexer.Context) {
 	resp, err := http.Get("https://en.wikipedia.org/w/api.php?action=query&format=json&list=random&rnnamespace=0&rnlimit=2")
 	if err != nil {
-		commandLogs.CmdErr(ctx, err, "Unable to get random wikipedia page")
+		cmdErr(ctx, err, "Unable to get random wikipedia page")
 		return
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		commandLogs.CmdErr(ctx, err, "Unable to read page")
+		cmdErr(ctx, err, "Unable to read page")
 		return
 	}
 
 	var search wikiResult
 	err = json.Unmarshal(body, &search)
 	if err != nil {
-		commandLogs.CmdErr(ctx, err, "Unable to unmarshal page")
+		cmdErr(ctx, err, "Unable to unmarshal page")
 		return
 	}
 

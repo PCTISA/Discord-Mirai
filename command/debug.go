@@ -32,9 +32,9 @@ func (c Debug) Handle(ctx *multiplexer.Context) {
 	case "config":
 		var sb strings.Builder
 		sb.WriteString(
-			fmt.Sprintf("`Simple Commands: %+v`\n\n", commandConfig.SimpleCommands))
+			fmt.Sprintf("`Simple Commands: %+v`\n\n", cfg.SimpleCommands))
 		sb.WriteString(
-			fmt.Sprintf("`Permissions: %+v`", commandConfig.Permissions))
+			fmt.Sprintf("`Permissions: %+v`", cfg.Permissions))
 		ctx.ChannelSend(sb.String())
 
 	case "args":
@@ -69,9 +69,6 @@ func (c Debug) Settings() *multiplexer.CommandSettings {
 	return &multiplexer.CommandSettings{
 		Command:  c.Command,
 		HelpText: c.HelpText,
-		Permissions: &multiplexer.CommandPermissions{
-			RoleIDs: commandConfig.Permissions.RoleIDs[c.Command],
-		},
 	}
 }
 

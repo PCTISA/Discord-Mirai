@@ -41,16 +41,6 @@ func New(debug bool) *Logs {
 	}
 }
 
-// CmdErr is used for handling errors within commands which should be reported
-// to the user. Takes a multiplexer context, error message, and user-readable
-// message which are sent to the channel where the command was executed.
-func (l *Logs) CmdErr(ctx *multiplexer.Context, err error, msg string) {
-	ctx.ChannelSendf(
-		"%s Maybe :at: Carson or Josiah?\nError:```%s```", msg, err.Error(),
-	)
-	l.Command.Error(err)
-}
-
 // MuxMiddleware is the middleware function attached to MuxLog. Accepts the context
 // from disgomux.
 func (l *Logs) MuxMiddleware(ctx *multiplexer.Context) {

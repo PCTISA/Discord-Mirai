@@ -31,8 +31,7 @@ var (
 	cfg  *config.BotConfig
 	logs *log.Logs
 
-	prefix        = "!"
-	rateLimitTime = 5 * time.Minute
+	prefix = "!"
 )
 
 func init() {
@@ -78,6 +77,9 @@ func main() {
 	/* Use the logging middleware with the multiplexer */
 	mux.UseMiddleware(logs.MuxMiddleware)
 
+	/* Set Permissions */
+	mux.SetPermissions(cfg.Permissions)
+
 	/* Setup Errors */
 	mux.SetErrors(&multiplexer.ErrorTexts{
 		CommandNotFound: "Command not found.",
@@ -122,16 +124,21 @@ func main() {
 			Command:  "jpeg",
 			HelpText: "More JPEG for the last image. 'nuff said",
 		},
+		command.Reload{
+			Command:  "reload",
+			HelpText: "Reload the bot's config",
+			Mux:      mux,
+    },
 		command.LMGTFY{
 			Command:      "googlehelp",
 			HelpText:     "In case someone isn't familiar with Google",
 			RateLimitMax: 2,
 			RateLimitDB:  cache.New(30*time.Minute, 30*time.Minute),
-		},
+		}
 	)
 
 	/* Configure multiplexer options */
-	mux.Options(&multiplexer.Options{
+	mux.SetOptions(&multiplexer.Options{
 		IgnoreDMs:        true,
 		IgnoreBots:       true,
 		IgnoreNonDefault: true,
@@ -146,14 +153,7 @@ func main() {
 	}
 
 	/* Register commands from the config file */
-	for k := range cfg.SimpleCommands {
-		k := k
-		mux.RegisterSimple(multiplexer.SimpleCommand{
-			Command:  k,
-			Content:  cfg.SimpleCommands[k],
-			HelpText: "This is a simple command",
-		})
-	}
+	command.RegisterSimple(mux)
 
 	/* === End Register === */
 
