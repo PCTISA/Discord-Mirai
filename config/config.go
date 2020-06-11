@@ -4,16 +4,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
+	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 	"github.com/PulseDevelopmentGroup/0x626f74/util"
+
 	"github.com/tidwall/gjson"
 )
 
 type (
 	// BotConfig defines the configuration container for the bot
 	BotConfig struct {
+		Path string
+
 		SimpleCommands map[string]string
-		Permissions    *BotPermissions
+		Permissions    map[string]*multiplexer.CommandPermissions
 	}
 
 	// BotPermissions contains the permission maps for roles, channels, and
@@ -37,17 +42,26 @@ func Get(path string) (*BotConfig, error) {
 		return &BotConfig{}, err
 	}
 
-	roles, err := getRoles(json)
-	if err != nil {
-		return &BotConfig{}, err
-	}
+	perms := getPermissions(json)
 
 	return &BotConfig{
+		Path:           path,
 		SimpleCommands: simpleCommands,
-		Permissions: &BotPermissions{
-			RoleIDs: roles,
-		},
+		Permissions:    perms,
 	}, nil
+}
+
+func (c *BotConfig) Update() error {
+	new, err := Get(c.Path)
+	if err != nil {
+		return err
+	}
+
+	c.Path = new.Path
+	c.SimpleCommands = new.SimpleCommands
+	c.Permissions = new.Permissions
+
+	return nil
 }
 
 func getJSON(path string) (string, error) {
@@ -98,12 +112,12 @@ func getSimpleCommands(json string) (map[string]string, error) {
 	return out, nil
 }
 
-/* TODO: I feel like this function is really a disaster and needs a rework sometime */
-func getRoles(json string) (map[string][]string, error) {
-	out := make(map[string][]string)
+// TODO: Implement support for getting user ids and channel ids
+func getPermissions(json string) map[string]*multiplexer.CommandPermissions {
+	out := make(map[string]*multiplexer.CommandPermissions)
 
-	r := gjson.Get(json, "permissions")
-	r.ForEach(func(key, value gjson.Result) bool {
+	p := gjson.Get(json, "permissions")
+	p.ForEach(func(key, value gjson.Result) bool {
 		var roles []string
 
 		if value.IsArray() {
@@ -112,9 +126,11 @@ func getRoles(json string) (map[string][]string, error) {
 			}
 		}
 
-		out[key.String()] = roles
+		out[strings.ToLower(key.String())] = &multiplexer.CommandPermissions{
+			RoleIDs: roles,
+		}
 
 		return true
 	})
-	return out, nil
+	return out
 }

@@ -43,9 +43,7 @@ func (c JPEG) Handle(ctx *multiplexer.Context) {
 			ctx.Message.ChannelID, 2, ctx.Message.ID, "", "",
 		)
 		if err != nil {
-			commandLogs.CmdErr(
-				ctx, err, "There was a problem getting the lastest messages",
-			)
+			cmdErr(ctx, err, "There was a problem getting the lastest messages")
 			return
 		}
 
@@ -89,18 +87,14 @@ func (c JPEG) Handle(ctx *multiplexer.Context) {
 	for _, url := range urls {
 		req, err := http.Get(url)
 		if err != nil {
-			commandLogs.CmdErr(
-				ctx, err, "There was a problem getting the attachment",
-			)
+			cmdErr(ctx, err, "There was a problem getting the attachment")
 			return
 		}
 		defer req.Body.Close()
 
 		imgIn, _, err := image.Decode(req.Body)
 		if err != nil {
-			commandLogs.CmdErr(
-				ctx, err, "There was a problem decoding the image",
-			)
+			cmdErr(ctx, err, "There was a problem decoding the image")
 			return
 		}
 
@@ -113,9 +107,7 @@ func (c JPEG) Handle(ctx *multiplexer.Context) {
 			Quality: imgQuality,
 		})
 		if err != nil {
-			commandLogs.CmdErr(
-				ctx, err, "There was a problem endoding the image",
-			)
+			cmdErr(ctx, err, "There was a problem endoding the image")
 			return
 		}
 

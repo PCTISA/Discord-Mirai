@@ -41,7 +41,7 @@ func (c Help) Init(m *multiplexer.Mux) {
 		i++
 	}
 
-	commandLogs.Command.WithField("command", c.Command).Infof(
+	logs.Command.WithField("command", c.Command).Infof(
 		"Loaded help handlers and messages for %d commands", i,
 	)
 }

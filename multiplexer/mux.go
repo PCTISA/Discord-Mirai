@@ -22,6 +22,7 @@ type (
 		fuzzyMatch     bool
 		commandNames   []string
 		errorTexts     *ErrorTexts
+		permissions    map[string]*CommandPermissions
 	}
 
 	// Command specifies the functions for a multiplexed command
@@ -32,7 +33,7 @@ type (
 		Settings() *CommandSettings
 	}
 
-	// CommandPermissions holds permissions for a given command in whitelist
+	// CommandPermissions holds the specific ID arrays for a given command in whitelist
 	// format. UserID takes priority over all other permissions. RoleID takes
 	// priority over ChanID.
 	CommandPermissions struct {
@@ -45,7 +46,6 @@ type (
 	// know.
 	CommandSettings struct {
 		Command, HelpText string
-		Permissions       *CommandPermissions
 
 		RateLimitMax int
 		RateLimitDB  *cache.Cache
@@ -99,15 +99,22 @@ func New(prefix string) (*Mux, error) {
 			CommandNotFound: "Command not found.",
 			NoPermissions:   "You do not have permission to use that command.",
 		},
-		options:    &Options{true, true, true, true},
-		fuzzyMatch: false,
+		options:     &Options{true, true, true, true},
+		permissions: make(map[string]*CommandPermissions),
+		fuzzyMatch:  false,
 	}, nil
 }
 
-// Options allows configuration of the multiplexer. Must be called before
+// SetOptions allows configuration of the multiplexer. Must be called before
 // Initialize()
-func (m *Mux) Options(opt *Options) {
+func (m *Mux) SetOptions(opt *Options) {
 	m.options = opt
+}
+
+// SetPermissions allows defining permissions for each command. Must be called
+// before Initialize()
+func (m *Mux) SetPermissions(perms map[string]*CommandPermissions) {
+	m.permissions = perms
 }
 
 // UseMiddleware adds a middleware to the multiplexer. Middlewares are called
@@ -139,6 +146,10 @@ func (m *Mux) RegisterSimple(simpleCommands ...SimpleCommand) {
 			m.SimpleCommands[cString] = c
 		}
 	}
+}
+
+func (m *Mux) ClearSimple() {
+	m.SimpleCommands = make(map[string]SimpleCommand)
 }
 
 // UseFuzzy both enables and builds a list of commands to fuzzy match
@@ -266,8 +277,8 @@ func (m *Mux) Handle(
 	}
 
 	/* If permissions have been specified, check them */
-	p := settings.Permissions
-	if p != nil {
+	p, ok := m.permissions[command]
+	if ok {
 		member, err := session.GuildMember(message.GuildID, message.Author.ID)
 		if err != nil {
 			ctx.ChannelSend("There was a weird issue.")

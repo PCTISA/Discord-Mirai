@@ -31,7 +31,7 @@ func (c Gatekeeper) Handle(ctx *multiplexer.Context) {
 	guildID := ctx.Message.GuildID
 	roles, err := ctx.Session.GuildRoles(guildID)
 	if err != nil {
-		commandLogs.CmdErr(ctx, err, "There was a problem getting the roles of the guild")
+		cmdErr(ctx, err, "There was a problem getting the roles of the guild")
 		return
 	}
 
@@ -80,7 +80,7 @@ func (c Gatekeeper) Handle(ctx *multiplexer.Context) {
 	userID := ctx.Message.Author.ID
 	member, err := ctx.Session.GuildMember(ctx.Message.GuildID, userID)
 	if err != nil {
-		commandLogs.CmdErr(ctx, err, "There was a problem getting the user id")
+		cmdErr(ctx, err, "There was a problem getting the user id")
 	}
 
 	/* Check to see if the requested role is valid */

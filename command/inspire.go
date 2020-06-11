@@ -32,9 +32,7 @@ func (c Inspire) Init(m *multiplexer.Mux) {
 func (c Inspire) Handle(ctx *multiplexer.Context) {
 	resp, err := http.Get("http://inspirobot.me/api?generate=true")
 	if err != nil {
-		commandLogs.CmdErr(
-			ctx, err, "There was an error contacting the InspiroBot API",
-		)
+		cmdErr(ctx, err, "There was an error contacting the InspiroBot API")
 		return
 	}
 	defer resp.Body.Close()
@@ -42,7 +40,7 @@ func (c Inspire) Handle(ctx *multiplexer.Context) {
 	if resp.StatusCode == http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			commandLogs.CmdErr(ctx, err, "Unable to parse InspiroBot response")
+			cmdErr(ctx, err, "Unable to parse InspiroBot response")
 			return
 		}
 
@@ -59,7 +57,7 @@ func (c Inspire) Handle(ctx *multiplexer.Context) {
 		)
 
 		if err != nil {
-			commandLogs.CmdErr(ctx, err, "There was an issue sending the embed")
+			cmdErr(ctx, err, "There was an issue sending the embed")
 			return
 		}
 
@@ -69,9 +67,7 @@ func (c Inspire) Handle(ctx *multiplexer.Context) {
 			ctx,
 		)
 		if err != nil {
-			commandLogs.CmdErr(
-				ctx, err, "There was an issue creating the reaction watcher",
-			)
+			cmdErr(ctx, err, "There was an issue creating the reaction watcher")
 			return
 		}
 
@@ -90,8 +86,7 @@ func (c Inspire) Handle(ctx *multiplexer.Context) {
 			},
 		)
 		if err != nil {
-			commandLogs.CmdErr(
-				ctx, err,
+			cmdErr(ctx, err,
 				"There was an issue adding a one of the reaction options",
 			)
 		}
