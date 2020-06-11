@@ -6,6 +6,15 @@ import (
 	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
 )
 
+/*
+
+
+TODO: The existance of this file and it's functionality is horrifying, but
+      I really have no better solution? Will definitely have to revisit this.
+
+
+*/
+
 var (
 	cfg  *config.BotConfig
 	logs *log.Logs

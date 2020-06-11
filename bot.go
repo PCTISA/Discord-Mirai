@@ -128,7 +128,7 @@ func main() {
 			Command:  "reload",
 			HelpText: "Reload the bot's config",
 			Mux:      mux,
-    },
+    	},
 		command.LMGTFY{
 			Command:      "googlehelp",
 			HelpText:     "In case someone isn't familiar with Google",

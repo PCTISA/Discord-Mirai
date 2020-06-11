@@ -56,8 +56,5 @@ func (c LMGTFY) Settings() *multiplexer.CommandSettings {
 		HelpText:     c.HelpText,
 		RateLimitDB:  c.RateLimitDB,
 		RateLimitMax: c.RateLimitMax,
-		Permissions: &multiplexer.CommandPermissions{
-			RoleIDs: commandConfig.Permissions.RoleIDs[c.Command],
-		},
 	}
 }
