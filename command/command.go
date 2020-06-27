@@ -1,9 +1,9 @@
 package command
 
 import (
-	"github.com/PulseDevelopmentGroup/0x626f74/config"
-	"github.com/PulseDevelopmentGroup/0x626f74/log"
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/config"
+	"github.com/PCTISA/Discord-Mirai/log"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 )
 
 /*
@@ -46,7 +46,7 @@ func RegisterSimple(mux *multiplexer.Mux) {
 // message which are sent to the channel where the command was executed.
 func cmdErr(ctx *multiplexer.Context, err error, msg string) {
 	ctx.ChannelSendf(
-		"%s Maybe :at: Carson or Josiah?\nError:```%s```", msg, err.Error(),
+		"%s Something weird happened. Might need to report this on Github\nError:```%s```", msg, err.Error(),
 	)
 	logs.Command.Error(err)
 }

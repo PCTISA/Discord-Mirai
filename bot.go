@@ -7,10 +7,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/PulseDevelopmentGroup/0x626f74/command"
-	"github.com/PulseDevelopmentGroup/0x626f74/config"
-	"github.com/PulseDevelopmentGroup/0x626f74/log"
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/command"
+	"github.com/PCTISA/Discord-Mirai/config"
+	"github.com/PCTISA/Discord-Mirai/log"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 
 	"github.com/bwmarrin/discordgo"
 	goenv "github.com/caarlos0/env/v6"
@@ -100,25 +100,13 @@ func main() {
 			Command:  "debug",
 			HelpText: "Debuging info for bot-wranglers",
 		},
-		command.Wiki{
-			Command:      "wikirace",
-			HelpText:     "Start a wikirace",
-			RateLimitMax: 3,
-			RateLimitDB:  cache.New(5*time.Minute, 5*time.Minute),
-		},
-		command.Gatekeeper{
+		/*command.Gatekeeper{
 			Command:  "role",
 			HelpText: "Manage your access to roles, and their related channels",
-		},
+		},*/
 		command.Help{
 			Command:  "help",
 			HelpText: "Displays help  information regarding the bot's commands",
-		},
-		command.Inspire{
-			Command:      "inspire",
-			HelpText:     "Get an inspirational quote from inspirobot.me",
-			RateLimitMax: 3,
-			RateLimitDB:  cache.New(5*time.Minute, 5*time.Minute),
 		},
 		command.JPEG{
 			Command:  "jpeg",
@@ -128,13 +116,13 @@ func main() {
 			Command:  "reload",
 			HelpText: "Reload the bot's config",
 			Mux:      mux,
-    	},
+		},
 		command.LMGTFY{
 			Command:      "googlehelp",
 			HelpText:     "In case someone isn't familiar with Google",
 			RateLimitMax: 2,
 			RateLimitDB:  cache.New(30*time.Minute, 30*time.Minute),
-		}
+		},
 	)
 
 	/* Configure multiplexer options */

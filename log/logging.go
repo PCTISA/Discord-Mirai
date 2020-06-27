@@ -3,7 +3,7 @@ package log
 import (
 	"os"
 
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 	"github.com/sirupsen/logrus"
 )
 

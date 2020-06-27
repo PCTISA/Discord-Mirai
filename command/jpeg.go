@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 	"github.com/bwmarrin/discordgo"
 	"github.com/disintegration/imaging"
 )

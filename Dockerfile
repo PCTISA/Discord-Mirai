@@ -12,7 +12,7 @@ RUN go build -o zeroxsix .
 FROM alpine:latest
 WORKDIR /app
 RUN apk add --no-cache ca-certificates
-COPY --from=0 /app/zeroxsix .
+COPY --from=0 /app/discordmirai .
 
 EXPOSE 8080
-CMD ./zeroxsix
+CMD ./discordmirai

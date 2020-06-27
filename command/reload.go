@@ -1,7 +1,7 @@
 package command
 
 import (
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 )
 
 // Reload is a command

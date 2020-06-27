@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
-	"github.com/bwmarrin/discordgo"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 )
 
 // Debug is a command
@@ -39,8 +38,6 @@ func (c Debug) Handle(ctx *multiplexer.Context) {
 
 	case "args":
 		ctx.ChannelSend(fmt.Sprintf("%+v", ctx.Arguments))
-	case "stats":
-		c.stats(ctx)
 	default:
 		ctx.ChannelSend("Debug")
 	}
@@ -69,60 +66,5 @@ func (c Debug) Settings() *multiplexer.CommandSettings {
 	return &multiplexer.CommandSettings{
 		Command:  c.Command,
 		HelpText: c.HelpText,
-	}
-}
-
-func (c Debug) stats(ctx *multiplexer.Context) {
-	if len(ctx.Arguments) > 1 {
-		switch strings.ToLower(ctx.Arguments[1]) {
-		case "cpu":
-			ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
-				c.generateStatsEmbed(
-					"CPU Stats", "now-15m", "now", 1000, 500, 50,
-				),
-			)
-		case "memory":
-			ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
-				c.generateStatsEmbed(
-					"Memory Stats", "now-15m", "now", 1000, 500, 51,
-				),
-			)
-		case "network":
-			ctx.Session.ChannelMessageSendEmbed(ctx.Message.ChannelID,
-				c.generateStatsEmbed(
-					"Network Stats", "now-15m", "now", 1000, 500, 52,
-				),
-			)
-		default:
-			ctx.ChannelSendf("Unknown option `%s`", ctx.Arguments[1])
-		}
-
-		return
-	}
-
-	ctx.ChannelSendf("Monitoring URL: https://crsn.link/fzer0")
-}
-
-func (c Debug) generateStatsEmbed(title, from, to string, width, height, panelID int) *discordgo.MessageEmbed {
-	fsBase := "https://status.carsonseese.com/d/lWIounQWk/vm-docker?orgId=2&var-Container=TestServerBot"
-	base := "https://status.carsonseese.com/render/d-solo/lWIounQWk/vm-docker?orgId=2&var-Container=TestServerBot"
-
-	return &discordgo.MessageEmbed{
-		Title: title,
-		Description: fmt.Sprintf(
-			"[Fullscreen](%s&from=%s&to=%s&panelId=%d&fullscreen)",
-			fsBase, from, to, panelID,
-		),
-
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "This image will not live update",
-		},
-		Color: 0xf55142,
-		Image: &discordgo.MessageEmbedImage{
-			URL: fmt.Sprintf(
-				"%s&from=%s&to=%s&panelId=%d&width=%d&height=%d",
-				base, from, to, panelID, width, height,
-			),
-		},
 	}
 }

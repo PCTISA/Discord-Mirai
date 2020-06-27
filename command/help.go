@@ -3,7 +3,7 @@ package command
 import (
 	"strings"
 
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -53,7 +53,7 @@ func (c Help) Handle(ctx *multiplexer.Context) {
 			&discordgo.MessageEmbed{
 				Title:       ":regional_indicator_h::regional_indicator_e::regional_indicator_l::regional_indicator_p:",
 				Author:      &discordgo.MessageEmbedAuthor{},
-				Color:       0xfdd329,
+				Color:       0x75ff33,
 				Description: "Available commands:",
 				Fields:      helpFields,
 			})

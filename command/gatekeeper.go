@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
-	"github.com/PulseDevelopmentGroup/0x626f74/util"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/util"
 )
 
 // Gatekeeper is a command

@@ -3,7 +3,7 @@ package command
 import (
 	"strings"
 
-	"github.com/PulseDevelopmentGroup/0x626f74/multiplexer"
+	"github.com/PCTISA/Discord-Mirai/multiplexer"
 	"github.com/patrickmn/go-cache"
 )
 
