@@ -21,7 +21,7 @@ jobs:
         id: build
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
-          name: pulsedevelopmentgroup/0x626f74/bot
+          name: pctisa/Discord-Mirai/bot
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
