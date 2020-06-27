@@ -1,7 +1,7 @@
-# 0x626f74 == bot
-![Build Status](https://github.com/PulseDevelopmentGroup/0x626f74/workflows/CI/badge.svg)
+# Discord-Mirai
+![Build Status](https://github.com/PCTISA/Discord-Mirai/workflows/CI/badge.svg)
 
-A custom Discord bot for the Test Server
+A custom Discord bot for the ISA Discord Server (not the botnet).
 
 
 ## Versioning Scheme
